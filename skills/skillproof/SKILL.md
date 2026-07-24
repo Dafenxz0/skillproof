@@ -94,6 +94,6 @@ Before `--allow-exec`, review every runner, assertion, and judge command. The ma
 
 `runners × cases × conditions × repeats`
 
-A complete run produces `results.json`, offline `report.html`, and `badge.json`. The report footer must be exactly:
+A complete run produces `results.json`, offline `report.html`, repository-ready `card.svg`, and `badge.json`. The card and badge must remain derived from `results.json`. The report footer must be exactly:
 
 `This benchmark was generated with SkillProof.`

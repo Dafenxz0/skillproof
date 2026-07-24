@@ -218,7 +218,7 @@ node bin/skillproof.js prices
 
 to inspect the bundled snapshot. Supply your own exact catalog with `--price-catalog` when a model, region, billing route, tool fee, or currency differs.
 
-## One run, two artifacts
+## One run, four artifacts
 
 `results.json` is the evidence record:
 
@@ -241,6 +241,14 @@ to inspect the bundled snapshot. Supply your own exact catalog with `--price-cat
 - light, dark, print, search, and downloadable JSON;
 - accessible semantic tables;
 - the exact footer: **This benchmark was generated with SkillProof.**
+
+`card.svg` is a compact repository-ready summary generated from the same
+evidence. It shows the verdict, quality lift, token overhead, completed runs,
+model/case counts, and benchmark mode. Commit it beside the report and embed:
+
+```md
+[![SkillProof evidence](./card.svg)](./report.html)
+```
 
 `badge.json` is derived from the same result. Never hand-edit a badge into a claim the JSON does not support.
 

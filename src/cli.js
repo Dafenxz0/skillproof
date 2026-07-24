@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { createStarterConfig, loadConfig, resolveConfigPaths, validateConfig } from "./config.js";
 import { judgeRuns } from "./judge.js";
 import { loadPricingCatalog } from "./pricing.js";
-import { writeHtmlReport } from "./report.js";
+import { writeHtmlReport, writeRepositoryCard } from "./report.js";
 import { executeCommand, executeRun, hashTree } from "./runner.js";
 import { summarizeBenchmark } from "./stats.js";
 import {
@@ -162,19 +162,23 @@ async function testCommand(positionals, options) {
   };
   const jsonPath = join(runDir, "results.json");
   const htmlPath = join(runDir, "report.html");
+  const cardPath = join(runDir, "card.svg");
   await writeJson(jsonPath, report);
   await writeHtmlReport(report, htmlPath);
+  await writeRepositoryCard(report, cardPath);
   await writeJson(join(runDir, "badge.json"), buildBadge(report));
   await writeJson(join(paths.outputDir, "latest.json"), {
     run_id: runId,
     report: relative(paths.outputDir, htmlPath).replaceAll("\\", "/"),
     results: relative(paths.outputDir, jsonPath).replaceAll("\\", "/"),
+    card: relative(paths.outputDir, cardPath).replaceAll("\\", "/"),
     verdict: summary.verdict.status,
     generated_at: report.generated_at
   });
   console.log(`Verdict: ${summary.verdict.status.toUpperCase()}`);
   console.log(`JSON: ${jsonPath}`);
   console.log(`HTML: ${htmlPath}`);
+  console.log(`Card: ${cardPath}`);
 }
 
 async function reportCommand(positionals, options) {
@@ -184,8 +188,11 @@ async function reportCommand(positionals, options) {
     throw new Error("Input is not a SkillProof results file");
   }
   const destination = resolve(options.output ?? join(dirname(source), "report.html"));
+  const cardDestination = join(dirname(destination), "card.svg");
   await writeHtmlReport(report, destination);
+  await writeRepositoryCard(report, cardDestination);
   console.log(`HTML: ${destination}`);
+  console.log(`Card: ${cardDestination}`);
 }
 
 async function doctorCommand() {
