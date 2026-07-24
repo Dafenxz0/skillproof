@@ -226,14 +226,23 @@ async function readSkillName(skillPath) {
   return name;
 }
 
-async function installSkill({ runner, condition, skillPath, skillName, workspace, agentHome }) {
+export async function installSkill({
+  runner,
+  condition,
+  skillPath,
+  skillName,
+  workspace,
+  agentHome
+}) {
   if (condition === "without_skill") {
     return { catalog_exposed: false, install_kind: "none" };
   }
   const kind = runner.skill_install ?? "environment";
   let destination = null;
+  const aliases = [];
   if (kind === "codex-home") {
     destination = safeJoin(agentHome, "skills", skillName);
+    aliases.push(safeJoin(agentHome, "skills", ".system", skillName));
   } else if (kind === "claude-workspace") {
     destination = safeJoin(workspace, ".claude", "skills", skillName);
   } else if (kind.startsWith("workspace:")) {
@@ -246,11 +255,16 @@ async function installSkill({ runner, condition, skillPath, skillName, workspace
     await mkdir(dirname(destination), { recursive: true });
     await cp(skillPath, destination, { recursive: true, force: true });
   }
+  for (const alias of aliases) {
+    await mkdir(dirname(alias), { recursive: true });
+    await cp(skillPath, alias, { recursive: true, force: true });
+  }
   return {
     catalog_exposed: true,
     install_kind: kind,
     installed_path: destination,
-    created_parent_dirs: createdParentDirs
+    created_parent_dirs: createdParentDirs,
+    alias_paths: aliases
   };
 }
 
@@ -377,13 +391,13 @@ export function isInfrastructureError(value) {
     .test(String(value));
 }
 
-async function buildInvocation(options, replacements) {
+export async function buildInvocation(options, replacements) {
   if (options.runner.preset === "codex") {
     const sandbox = options.runner.sandbox ?? "workspace-write";
     if (sandbox === "danger-full-access" && options.runner.allow_unsandboxed !== true) {
       throw new Error("danger-full-access requires runner.allow_unsandboxed=true");
     }
-    const finalPath = join(options.workspace, ".skillproof", "final.txt");
+    const finalPath = join(options.agentHome, "final.txt");
     await mkdir(dirname(finalPath), { recursive: true });
     return {
       args: [
@@ -411,7 +425,7 @@ async function buildInvocation(options, replacements) {
     if (process.platform === "win32") {
       throw new Error("Claude sandboxing is not supported on native Windows; run the Claude preset inside WSL2 or a container");
     }
-    const settingsPath = join(options.workspace, ".skillproof", "claude-settings.json");
+    const settingsPath = join(options.agentHome, "claude-settings.json");
     await mkdir(dirname(settingsPath), { recursive: true });
     await writeFile(settingsPath, `${JSON.stringify({
       sandbox: {

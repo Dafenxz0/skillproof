@@ -1,0 +1,32 @@
+{
+  "benchmark": {
+    "title": "Public development check",
+    "mode": "development"
+  },
+  "runner": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "reasoning_effort": "high"
+  },
+  "corpus": {
+    "positive_cases": 2,
+    "negative_cases": 1,
+    "repeats": 1
+  },
+  "metrics": {
+    "completed_runs": 9,
+    "planned_runs": 9,
+    "automatic_quality_delta_points": 18,
+    "forced_quality_delta_points": 22,
+    "automatic_activation_recall": null,
+    "activation_instrumented": false,
+    "paired_quality_regressions": 0,
+    "token_increase_percent": 72,
+    "maximum_token_increase_percent": 25
+  },
+  "limitations": [
+    "The public corpus is small and may be overfit.",
+    "Only one repeat was run.",
+    "Native skill-load telemetry was unavailable."
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "benchmark": {
+    "id": "skillproof-efficiency-canary",
+    "title": "SkillProof efficiency canary",
+    "description": "A focused real-agent check of the highest-overhead development case on GPT-5.6 Luna.",
+    "mode": "development",
+    "limitations": [
+      "This is a one-case, one-model, one-repeat canary, not quality or release evidence.",
+      "It exists to catch large context and tool-call regressions before running the broader self benchmark.",
+      "Codex skill-load telemetry is unavailable, so activation remains inconclusive."
+    ]
+  },
+  "skill": {
+    "path": "../../skills/skillproof"
+  },
+  "profile": "technical",
+  "conditions": [
+    "without_skill",
+    "skill_available_auto",
+    "skill_forced"
+  ],
+  "repeats": 1,
+  "seed": 20260725,
+  "concurrency": 1,
+  "runners": [
+    {
+      "id": "codex-luna-medium",
+      "adapter": "command",
+      "preset": "codex",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "medium",
+      "command": "codex",
+      "parser": "jsonl",
+      "skill_install": "codex-home",
+      "inherit_auth": true,
+      "sandbox": "danger-full-access",
+      "allow_unsandboxed": true,
+      "billing_route": "chatgpt-subscription",
+      "timeout_ms": 600000
+    }
+  ],
+  "cases": [
+    {
+      "id": "repair-multimodel-benchmark",
+      "title": "Repair a weak multimodel skill benchmark",
+      "applicability": "positive",
+      "prompt": "Repair benchmark.json into a credible but development-sized evaluation for an Agent Skill. Compare GPT-5.6 Luna at medium reasoning with GPT-5.6 Terra at both medium and high reasoning. Preserve exact model identities, use a small realistic mix of cases, and make the file explicit about what it can and cannot prove. Only edit files in this workspace.",
+      "fixture": "./fixtures/benchmark-design",
+      "assertions": [
+        {
+          "id": "causal-protocol",
+          "command": "node",
+          "args": ["./hidden/check-benchmark-design.mjs", "causal"],
+          "points": 20,
+          "critical": true
+        },
+        {
+          "id": "exact-model-matrix",
+          "command": "node",
+          "args": ["./hidden/check-benchmark-design.mjs", "matrix"],
+          "points": 20,
+          "critical": true
+        },
+        {
+          "id": "boundary-cases",
+          "command": "node",
+          "args": ["./hidden/check-benchmark-design.mjs", "boundaries"],
+          "points": 20,
+          "critical": true
+        },
+        {
+          "id": "quality-activation-efficiency",
+          "command": "node",
+          "args": ["./hidden/check-benchmark-design.mjs", "measurement"],
+          "points": 20,
+          "critical": true
+        },
+        {
+          "id": "claim-boundaries",
+          "command": "node",
+          "args": ["./hidden/check-benchmark-design.mjs", "limitations"],
+          "points": 20,
+          "critical": true
+        }
+      ]
+    }
+  ],
+  "judges": [],
+  "pricing": {
+    "catalog": "bundled"
+  },
+  "gates": {
+    "minimum_quality_delta": 0,
+    "regression_drop_points": 3,
+    "maximum_regressions": 0,
+    "minimum_activation_recall": 0.8,
+    "minimum_activation_precision": 0.8,
+    "maximum_false_activation_rate": 0.1,
+    "maximum_token_increase_percent": 100,
+    "maximum_latency_increase_percent": 150
+  },
+  "statistics": {
+    "bootstrap_samples": 2000,
+    "confidence": 0.95,
+    "tie_margin_points": 1
+  },
+  "output": "../../.skillproof/efficiency"
+}

@@ -3,10 +3,10 @@
   "benchmark": {
     "id": "skillproof-self-development",
     "title": "SkillProof self-development benchmark",
-    "description": "A small real-agent check of benchmark design value and adjacent-task restraint across two GPT-5.6 models and two reasoning settings.",
+    "description": "A real-agent development check of benchmark design, evidence interpretation, and adjacent-task restraint across two GPT-5.6 models and two reasoning settings.",
     "mode": "development",
     "limitations": [
-      "This public development corpus has two cases and one repeat; it is an engineering check, not release evidence.",
+      "This public development corpus has four cases and one repeat; it is an engineering check, not release evidence.",
       "Codex does not currently expose trusted skill-load telemetry in this runner, so automatic activation metrics may be inconclusive.",
       "This Windows-only development run opts into danger-full-access for trusted disposable fixtures because this Codex build degrades workspace-write to read-only; do not reuse that setting for hostile material.",
       "The corpus is stored beside the skill and can be overfit."
@@ -130,6 +130,83 @@
           "command": "node",
           "args": [
             "./hidden/check-adjacent-code.mjs"
+          ],
+          "points": 100,
+          "critical": true
+        }
+      ]
+    },
+    {
+      "id": "audit-unsupported-claim",
+      "title": "Scope an unsupported benchmark claim",
+      "applicability": "positive",
+      "prompt": "Audit results.json and replace draft.md with an accurate publication decision. State the exact quality change, activation status, token gate, and scope of the evidence. Keep it under 180 words and only edit draft.md.",
+      "fixture": "./fixtures/claim-audit",
+      "assertions": [
+        {
+          "id": "claim-scope",
+          "command": "node",
+          "args": [
+            "./hidden/check-claim-audit.mjs",
+            "scope"
+          ],
+          "points": 20,
+          "critical": true
+        },
+        {
+          "id": "quality-evidence",
+          "command": "node",
+          "args": [
+            "./hidden/check-claim-audit.mjs",
+            "quality"
+          ],
+          "points": 20,
+          "critical": true
+        },
+        {
+          "id": "activation-limit",
+          "command": "node",
+          "args": [
+            "./hidden/check-claim-audit.mjs",
+            "activation"
+          ],
+          "points": 20,
+          "critical": true
+        },
+        {
+          "id": "efficiency-gate",
+          "command": "node",
+          "args": [
+            "./hidden/check-claim-audit.mjs",
+            "efficiency"
+          ],
+          "points": 20,
+          "critical": true
+        },
+        {
+          "id": "publication-decision",
+          "command": "node",
+          "args": [
+            "./hidden/check-claim-audit.mjs",
+            "decision"
+          ],
+          "points": 20,
+          "critical": true
+        }
+      ]
+    },
+    {
+      "id": "adjacent-metric-helper",
+      "title": "Do not overreach on a metric helper",
+      "applicability": "negative",
+      "prompt": "Implement and export median(values) in src/stats.js. Reject non-arrays, empty arrays, and non-finite values; do not mutate the input. Keep the change focused.",
+      "fixture": "./fixtures/metric-helper",
+      "assertions": [
+        {
+          "id": "median-behavior",
+          "command": "node",
+          "args": [
+            "./hidden/check-metric-helper.mjs"
           ],
           "points": 100,
           "critical": true

@@ -286,9 +286,15 @@ npm run benchmark:self
 ```
 
 It compares GPT-5.6 Luna at medium reasoning with GPT-5.6 Terra at high
-reasoning over one positive benchmark-design task and one adjacent negative
-coding task. Its report is explicitly labelled development evidence: two public
-cases and one repeat are useful for iteration, not a release claim.
+reasoning over two positive benchmark/evidence tasks and two adjacent negative
+coding tasks. Its report is explicitly labelled development evidence: four
+public cases and one repeat are useful for iteration, not a release claim.
+
+Use the cheaper worst-case token canary before the full matrix:
+
+```bash
+npm run benchmark:efficiency
+```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) before changing result schemas, pricing, or benchmark statistics.
 
