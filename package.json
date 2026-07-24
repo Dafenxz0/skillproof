@@ -22,7 +22,8 @@
     "lint": "node --check bin/skillproof.js && node --check src/cli.js && node --check src/config.js && node --check src/index.js && node --check src/judge.js && node --check src/pricing.js && node --check src/profiles.js && node --check src/report.js && node --check src/runner.js && node --check src/stats.js && node --check src/utils.js",
     "check": "npm run lint && npm test",
     "demo": "node bin/skillproof.js test examples/demo-skill --config examples/demo/skillproof.config.json --allow-exec",
-    "benchmark:self": "node bin/skillproof.js test skills/skillproof --config benchmarks/self/skillproof.config.json --allow-exec"
+    "benchmark:self": "node bin/skillproof.js test skills/skillproof --config benchmarks/self/skillproof.config.json --allow-exec",
+    "benchmark:efficiency": "node bin/skillproof.js test skills/skillproof --config benchmarks/self/skillproof.efficiency.config.json --allow-exec"
   },
   "engines": {
     "node": ">=20"

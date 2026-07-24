@@ -218,7 +218,7 @@ node bin/skillproof.js prices
 
 to inspect the bundled snapshot. Supply your own exact catalog with `--price-catalog` when a model, region, billing route, tool fee, or currency differs.
 
-## One run, two artifacts
+## One run, four artifacts
 
 `results.json` is the evidence record:
 
@@ -241,6 +241,14 @@ to inspect the bundled snapshot. Supply your own exact catalog with `--price-cat
 - light, dark, print, search, and downloadable JSON;
 - accessible semantic tables;
 - the exact footer: **This benchmark was generated with SkillProof.**
+
+`card.svg` is a compact repository-ready summary generated from the same
+evidence. It shows the verdict, quality lift, token overhead, completed runs,
+model/case counts, and benchmark mode. Commit it beside the report and embed:
+
+```md
+[![SkillProof evidence](./card.svg)](./report.html)
+```
 
 `badge.json` is derived from the same result. Never hand-edit a badge into a claim the JSON does not support.
 
@@ -286,9 +294,15 @@ npm run benchmark:self
 ```
 
 It compares GPT-5.6 Luna at medium reasoning with GPT-5.6 Terra at high
-reasoning over one positive benchmark-design task and one adjacent negative
-coding task. Its report is explicitly labelled development evidence: two public
-cases and one repeat are useful for iteration, not a release claim.
+reasoning over two positive benchmark/evidence tasks and two adjacent negative
+coding tasks. Its report is explicitly labelled development evidence: four
+public cases and one repeat are useful for iteration, not a release claim.
+
+Use the cheaper worst-case token canary before the full matrix:
+
+```bash
+npm run benchmark:efficiency
+```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) before changing result schemas, pricing, or benchmark statistics.
 

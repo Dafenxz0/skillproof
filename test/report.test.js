@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { renderHtml } from "../src/report.js";
+import { renderHtml, renderRepositoryCard } from "../src/report.js";
 
 function distribution(value, measured = 2) {
   return {
@@ -205,6 +205,18 @@ test("report is standalone, hash-authorized, escaped, and carries the required f
   assert.ok(script);
   const hash = createHash("sha256").update(script).digest("base64");
   assert.match(html, new RegExp(`script-src 'sha256-${hash.replaceAll("+", "\\+")}'`));
+});
+
+test("repository card is compact, honest, and escaped", () => {
+  const card = renderRepositoryCard(makeReport());
+  assert.match(card, /width="640" height="196"/);
+  assert.match(card, /PASSED/);
+  assert.match(card, /\+5\.0 pts/);
+  assert.match(card, /\+100%/);
+  assert.match(card, /4 \/ 4/);
+  assert.match(card, /1 model.*1 case.*synthetic/);
+  assert.doesNotMatch(card, /<\/script><img/);
+  assert.match(card, /&lt;\/script&gt;&lt;img/);
 });
 
 test("report labels the gate honestly and exposes confidence, absolute deltas, coverage, and activation coverage", () => {

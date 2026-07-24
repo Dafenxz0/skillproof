@@ -2,8 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { executeRun, isInfrastructureError, parseTelemetry } from "../src/runner.js";
+import { isAbsolute, join, relative } from "node:path";
+import {
+  buildInvocation,
+  executeRun,
+  installSkill,
+  isInfrastructureError,
+  parseTelemetry
+} from "../src/runner.js";
 
 const pricingCatalog = {
   models: {
@@ -102,6 +108,63 @@ test("provider usage limits are classified as infrastructure failures", () => {
   assert.equal(isInfrastructureError("model refused the task"), false);
 });
 
+test("provider control files stay outside the candidate workspace", async () => {
+  const root = await mkdtemp(join(tmpdir(), "skillproof-control-files-"));
+  const workspace = join(root, "workspace");
+  const agentHome = join(root, "agent-home");
+  await mkdir(workspace);
+  await mkdir(agentHome);
+  try {
+    const codex = await buildInvocation({
+      runner: { preset: "codex", model: "example" },
+      workspace,
+      agentHome
+    }, {});
+    const finalPath = codex.args[codex.args.indexOf("-o") + 1];
+    assert.equal(isInside(workspace, finalPath), false);
+    assert.equal(isInside(agentHome, finalPath), true);
+
+    const claudeOptions = {
+      runner: { preset: "claude", model: "example" },
+      workspace,
+      agentHome
+    };
+    if (process.platform === "win32") {
+      await assert.rejects(buildInvocation(claudeOptions, {}), /not supported on native Windows/);
+    } else {
+      const claude = await buildInvocation(claudeOptions, {});
+      const settingsPath = claude.args[claude.args.indexOf("--settings") + 1];
+      assert.equal(isInside(workspace, settingsPath), false);
+      assert.equal(isInside(agentHome, settingsPath), true);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("Codex skill installation provides the advertised system alias", async () => {
+  const root = await createFixtureRoot();
+  const agentHome = join(root.path, "agent-home");
+  await mkdir(agentHome);
+  try {
+    const installation = await installSkill({
+      runner: { skill_install: "codex-home" },
+      condition: "skill_available_auto",
+      skillPath: root.skill,
+      skillName: "tested-skill",
+      workspace: root.fixture,
+      agentHome
+    });
+    await access(join(agentHome, "skills", "tested-skill", "SKILL.md"));
+    await access(join(agentHome, "skills", ".system", "tested-skill", "SKILL.md"));
+    assert.deepEqual(installation.alias_paths, [
+      join(agentHome, "skills", ".system", "tested-skill")
+    ]);
+  } finally {
+    await rm(root.path, { recursive: true, force: true });
+  }
+});
+
 test("workspace skill installation restores the fixture directory topology", async (t) => {
   await t.test("preserves a pre-existing .claude directory", async () => {
     const root = await createFixtureRoot();
@@ -196,4 +259,9 @@ function runFixture(root, runnerOverrides) {
     pricingCatalog,
     allowExec: false
   });
+}
+
+function isInside(root, path) {
+  const value = relative(root, path);
+  return value === "" || (!value.startsWith("..") && !isAbsolute(value));
 }

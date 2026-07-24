@@ -7,6 +7,55 @@ export async function writeHtmlReport(report, outputPath) {
   await writeFile(outputPath, renderHtml(report), "utf8");
 }
 
+export async function writeRepositoryCard(report, outputPath) {
+  await writeFile(outputPath, renderRepositoryCard(report), "utf8");
+}
+
+export function renderRepositoryCard(report) {
+  const runners = Object.values(report.summary.runners);
+  const verdict = normalizeVerdict(report.summary.verdict.status);
+  const accent = {
+    passed: "#78D69D",
+    failed: "#F0755B",
+    inconclusive: "#E8B85B"
+  }[verdict];
+  const quality = metricRange(
+    runners.map((runner) => runner.contrasts?.auto_vs_without?.quality_delta_points),
+    " pts",
+  );
+  const tokens = metricRange(
+    runners.map((runner) => runner.contrasts?.auto_vs_without?.tokens_delta_percent),
+    "%",
+  );
+  const completed = report.summary.run_counts.completed;
+  const planned = report.summary.run_counts.planned;
+  const modelCount = runners.length;
+  const caseCount = report.cases.length;
+  const mode = String(report.benchmark.mode ?? "mode unknown").toLowerCase();
+  const title = truncateCardText(report.benchmark.title, 58);
+  const date = String(report.generated_at ?? "").slice(0, 10) || "date unknown";
+  const description = `${verdict} benchmark; quality ${quality}; token overhead ${tokens}; ${completed} of ${planned} runs completed.`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="196" viewBox="0 0 640 196" role="img" aria-labelledby="title description">
+  <title id="title">SkillProof evidence card: ${escapeHtml(title)}</title>
+  <desc id="description">${escapeHtml(description)}</desc>
+  <rect width="640" height="196" rx="14" fill="#101513"/>
+  <rect x="0.75" y="0.75" width="638.5" height="194.5" rx="13.25" fill="none" stroke="#344039" stroke-width="1.5"/>
+  <rect x="24" y="22" width="28" height="4" rx="2" fill="${accent}"/>
+  <text x="62" y="29" fill="#AAB7B0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="700" letter-spacing="1.2">SKILLPROOF / EVIDENCE</text>
+  <rect x="490" y="14" width="126" height="26" rx="13" fill="${accent}" fill-opacity="0.14" stroke="${accent}" stroke-opacity="0.55"/>
+  <text x="553" y="31" fill="${accent}" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="700" letter-spacing="0.6">${escapeHtml(verdict.toUpperCase())}</text>
+  <text x="24" y="68" fill="#F2F5F3" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="21" font-weight="700">${escapeHtml(title)}</text>
+  <line x1="24" y1="86" x2="616" y2="86" stroke="#2C3732"/>
+  ${cardMetric(24, "QUALITY LIFT", quality)}
+  ${cardMetric(228, "TOKEN OVERHEAD", tokens)}
+  ${cardMetric(432, "COMPLETED RUNS", `${integer(completed)} / ${integer(planned)}`)}
+  <line x1="24" y1="156" x2="616" y2="156" stroke="#2C3732"/>
+  <text x="24" y="179" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">${escapeHtml(`${modelCount} model${modelCount === 1 ? "" : "s"} · ${caseCount} case${caseCount === 1 ? "" : "s"} · ${mode} · ${date}`)}</text>
+  <text x="616" y="179" fill="#87958E" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">generated from results.json</text>
+</svg>
+`;
+}
+
 export function renderHtml(report) {
   const summary = report.summary;
   const runnerSummaries = Object.values(summary.runners);
@@ -16,6 +65,8 @@ export function renderHtml(report) {
   const caseIndex = new Map(report.cases.map((testCase) => [testCase.id, testCase]));
   const runnerSections = runnerSummaries.map((runner) => renderRunner(runner, report, caseIndex)).join("");
   const warnings = buildWarnings(report);
+  const repositoryCard = renderRepositoryCard(report);
+  const repositoryCardData = Buffer.from(repositoryCard, "utf8").toString("base64");
   const script = clientScript();
   const scriptHash = createHash("sha256").update(script).digest("base64");
   return `<!doctype html>
@@ -34,6 +85,7 @@ export function renderHtml(report) {
     <a class="wordmark" href="#main" aria-label="SkillProof report">SkillProof<span>/report</span></a>
     <nav aria-label="Report sections">
       <a href="#outcomes">Outcomes</a>
+      <a href="#repository-card">Card</a>
       <a href="#runners">Models</a>
       <a href="#provenance">Provenance</a>
       <a href="#limitations">Limitations</a>
@@ -90,9 +142,26 @@ export function renderHtml(report) {
       <p class="definition">Quality is a paired positive-case difference. Efficiency deltas are relative across all paired cases. A positive quality delta is favorable; positive token, cost, or latency deltas are additional operational tax. Cost uses provider-observed estimates when present and otherwise the pinned API-equivalent catalog estimate.</p>
     </section>
 
+    <section id="repository-card" class="section" aria-labelledby="repository-card-title">
+      <div class="section-heading">
+        <p>02 / Share</p>
+        <h2 id="repository-card-title">Repository evidence card</h2>
+      </div>
+      <div class="repository-card-grid">
+        <figure class="repository-card-preview">
+          <img src="data:image/svg+xml;base64,${repositoryCardData}" alt="SkillProof evidence card showing the benchmark verdict and headline metrics" width="640" height="196">
+          <figcaption><code>card.svg</code> is generated from this report. Keep it beside <code>report.html</code>.</figcaption>
+        </figure>
+        <div class="embed-instructions">
+          <p>Add this small, honest summary to a repository README. The verdict and metrics cannot drift from <code>results.json</code>.</p>
+          <pre><code>[![SkillProof evidence](./card.svg)](./report.html)</code></pre>
+        </div>
+      </div>
+    </section>
+
     <section id="runners" class="section" aria-labelledby="runners-title">
       <div class="section-heading">
-        <p>02 / Models</p>
+        <p>03 / Models</p>
         <h2 id="runners-title">Evidence by runner</h2>
       </div>
       ${runnerSections}
@@ -100,7 +169,7 @@ export function renderHtml(report) {
 
     <section id="provenance" class="section split" aria-labelledby="provenance-title">
       <div class="section-heading">
-        <p>03 / Audit trail</p>
+        <p>04 / Audit trail</p>
         <h2 id="provenance-title">Provenance</h2>
       </div>
       <dl class="provenance">
@@ -120,7 +189,7 @@ export function renderHtml(report) {
 
     <section id="limitations" class="section split limitations" aria-labelledby="limitations-title">
       <div class="section-heading">
-        <p>04 / Boundaries</p>
+        <p>05 / Boundaries</p>
         <h2 id="limitations-title">Limitations</h2>
       </div>
       <ul>
@@ -130,7 +199,7 @@ export function renderHtml(report) {
 
     <section class="section raw no-print" aria-labelledby="raw-title">
       <div class="section-heading">
-        <p>05 / Source</p>
+        <p>06 / Source</p>
         <h2 id="raw-title">Raw benchmark data</h2>
       </div>
       <details>
@@ -423,6 +492,7 @@ h3{margin:0;font-size:28px;letter-spacing:-.025em}h4{margin:0 0 16px;font-size:1
 .stamp-passed{color:var(--good)}.stamp-failed{color:var(--bad)}.stamp-inconclusive{color:var(--warn)}
 .notice{display:grid;grid-template-columns:220px 1fr;gap:32px;margin:24px 0 0;padding:18px;border-left:5px solid var(--warn);background:color-mix(in srgb,var(--warn) 7%,var(--surface))}.notice h2{font-size:17px}.notice ul{margin:0;padding-left:20px}
 .section{padding:64px 0;border-bottom:1px solid var(--rule)}.section-heading{display:grid;grid-template-columns:220px 1fr;gap:32px;align-items:end;margin-bottom:32px}
+.repository-card-grid{display:grid;grid-template-columns:minmax(0,640px) minmax(260px,1fr);gap:36px;align-items:center}.repository-card-preview{margin:0}.repository-card-preview img{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 16px 44px rgb(0 0 0 / .12)}.repository-card-preview figcaption{margin-top:10px;color:var(--muted);font-size:12px}.embed-instructions p{max-width:52ch;color:var(--muted)}.embed-instructions pre{overflow:auto;padding:14px;background:var(--surface);border:1px solid var(--rule);font:12px/1.5 var(--code)}
 .table-wrap{max-width:100%;overflow:auto;overscroll-behavior-inline:contain}.table-wrap:focus-visible{outline-offset:4px}
 table{width:100%;border-collapse:collapse;text-align:left}caption{padding:0 0 12px;color:var(--muted);text-align:left;font-size:13px}
 th,td{padding:13px 12px;border-bottom:1px solid var(--rule);vertical-align:top}thead th{color:var(--muted);font:11px var(--code);text-transform:uppercase;letter-spacing:.045em}tbody th{font-weight:650}
@@ -450,7 +520,7 @@ tbody th small,td small{display:block;color:var(--muted);font:11px var(--code)}.
 .limitations ul{margin:0;padding-left:20px;columns:2;column-gap:40px}.limitations li{break-inside:avoid;margin-bottom:12px}
 .raw pre{max-height:560px;overflow:auto;padding:20px;background:var(--surface);border:1px solid var(--rule);font:12px/1.6 var(--code)}
 footer{padding:40px 16px;text-align:center;color:var(--muted);font:12px var(--code)}.empty{padding:18px;border:1px dashed var(--rule);color:var(--muted)}
-@media(max-width:900px){.topbar nav{display:none}.controls{margin-left:auto}.masthead{grid-template-columns:1fr}.stamp{width:100%}.section-heading,.notice,.split{grid-template-columns:1fr}.metric-strip{grid-template-columns:repeat(2,1fr)}.metric-block:nth-child(2){border-right:0}.runner-grid{grid-template-columns:1fr}.limitations ul{columns:1}}
+@media(max-width:900px){.topbar nav{display:none}.controls{margin-left:auto}.masthead{grid-template-columns:1fr}.stamp{width:100%}.section-heading,.notice,.split,.repository-card-grid{grid-template-columns:1fr}.metric-strip{grid-template-columns:repeat(2,1fr)}.metric-block:nth-child(2){border-right:0}.runner-grid{grid-template-columns:1fr}.limitations ul{columns:1}}
 @media(max-width:720px){main{width:min(100% - 24px,1440px)}.topbar{gap:10px;padding:8px 12px}.controls{gap:5px}.control-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.download-long{display:none}.download-short{display:inline}.masthead{padding-top:40px}h1{font-size:40px}.runner{padding:16px}.metric-strip{grid-template-columns:1fr}.metric-block{border-right:0}.delta-plot li{grid-template-columns:1fr 110px}.delta-axis{display:none}.case-tools{align-items:stretch;flex-direction:column}.case-tools h4{margin:0}.case summary{align-items:flex-start;flex-direction:column}.case-score{width:100%;justify-content:space-between}.case-body{padding-right:12px}.provenance{grid-template-columns:1fr}button,select,input{min-height:44px}}
 @media(max-width:480px){.wordmark span{display:none}.topbar{gap:6px}.controls{gap:4px}button,select{padding-inline:7px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
@@ -538,6 +608,24 @@ function buildWarnings(report) {
     }
   }
   return warnings;
+}
+
+function cardMetric(x, label, value) {
+  return `<text x="${x}" y="111" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="700" letter-spacing="0.8">${escapeHtml(label)}</text>
+  <text x="${x}" y="139" fill="#F2F5F3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">${escapeHtml(value)}</text>`;
+}
+
+function metricRange(values, suffix) {
+  const measured = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!measured.length) return "not recorded";
+  const minimum = signed(measured[0]);
+  const maximum = signed(measured.at(-1));
+  return `${minimum}${minimum === maximum ? "" : `–${maximum}`}${suffix}`;
+}
+
+function truncateCardText(value, limit) {
+  const text = String(value ?? "Untitled benchmark").replaceAll(/\s+/g, " ").trim();
+  return text.length <= limit ? text : `${text.slice(0, limit - 1).trimEnd()}…`;
 }
 
 function metricBlock(label, value, suffix, note, showSign = false) {

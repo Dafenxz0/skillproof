@@ -23,6 +23,7 @@ test("demo executes a multimodel matrix and writes JSON, HTML, and badge", { tim
   ], { cwd: repository });
   const results = JSON.parse(await readFile(join(output, "results.json"), "utf8"));
   const html = await readFile(join(output, "report.html"), "utf8");
+  const card = await readFile(join(output, "card.svg"), "utf8");
   const badge = JSON.parse(await readFile(join(output, "badge.json"), "utf8"));
   assert.equal(Object.keys(results.summary.runners).length, 2);
   assert.equal(results.summary.run_counts.planned, 36);
@@ -30,5 +31,8 @@ test("demo executes a multimodel matrix and writes JSON, HTML, and badge", { tim
   assert.equal(results.summary.runners["fixture-terra"].activation.recall.value, 1);
   assert.equal(results.summary.runners["fixture-sonnet"].activation.false_activation_rate.value, 0);
   assert.match(html, /This benchmark was generated with SkillProof\./);
+  assert.match(html, /Repository evidence card/);
+  assert.match(card, /SKILLPROOF \/ EVIDENCE/);
+  assert.match(card, /generated from results\.json/);
   assert.equal(badge.schemaVersion, 1);
 });
