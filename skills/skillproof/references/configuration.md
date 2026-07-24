@@ -13,6 +13,11 @@ SkillProof uses JSON so the CLI remains dependency-free.
     "mode": "release"
   },
   "skill": { "path": "./skills/my-skill" },
+  "claims": {
+    "quality": true,
+    "activation": false,
+    "efficiency": true
+  },
   "profile": "technical",
   "conditions": [
     "without_skill",
@@ -59,7 +64,17 @@ and reasoning setting. SkillProof never averages two such configurations into
 one headline. Requested identity and provider-observed identities are both kept
 in the result.
 
-`inherit_auth` copies only Codex's authentication file into the disposable agent home. It is opt-in because generated commands may be hostile. Use it only with trusted fixtures or an outer sandbox.
+If the provider emits no runtime model identity, the report labels the runner
+`requested_only`.
+
+`inherit_auth` copies only the preset's credential file into the disposable
+agent home. It is opt-in because generated commands may be hostile. Use it only
+with trusted fixtures or an outer sandbox.
+
+Runners, assertions, and judges inherit only a minimal OS environment. Add
+required variables by name with `"env_passthrough": ["OPENAI_API_KEY"]`.
+Reports retain these names but never their values. Claude uses an isolated
+home/config directory; an optional credential copy stays inside it.
 
 `sandbox` defaults to `workspace-write`. The `danger-full-access` value is
 rejected unless `allow_unsandboxed` is explicitly `true`; use that escape hatch
@@ -149,6 +164,7 @@ Use a different judge family from the generator when practical.
 ```json
 {
   "minimum_quality_delta": 3,
+  "minimum_quality_ci_lower": 0,
   "regression_drop_points": 3,
   "maximum_regressions": 0,
   "minimum_activation_recall": 0.8,
@@ -160,3 +176,8 @@ Use a different judge family from the generator when practical.
 ```
 
 Thresholds are product policy. Freeze them before seeing evaluation results.
+For release mode, `minimum_quality_ci_lower` is required when quality is
+claimed. Activation gates are required only when activation is claimed.
+
+Pricing catalogs currently support `currency: "USD"` only. Other currencies
+are rejected rather than mislabeled as `cost_usd`.

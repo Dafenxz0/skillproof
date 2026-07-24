@@ -4,6 +4,8 @@ import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative } from "node:path";
 import {
+  buildSafeEnvironment,
+  buildRunnerEnvironment,
   buildInvocation,
   executeRun,
   installSkill,
@@ -50,6 +52,21 @@ test("Codex telemetry uses the terminal event and preserves terminal failures", 
   }), "jsonl", "codex");
   assert.equal(failed.protocol_complete, true);
   assert.equal(failed.terminal_error, "model refused the task");
+});
+
+test("Codex telemetry records an observed model only when the runtime emits one", () => {
+  const observed = parseTelemetry(JSON.stringify({
+    type: "turn.completed",
+    model: "gpt-5.6-terra-2026-07-01",
+    usage: { input_tokens: 10, output_tokens: 2 }
+  }), "jsonl", "codex");
+  assert.deepEqual(observed.observed_models, ["gpt-5.6-terra-2026-07-01"]);
+
+  const requestedOnly = parseTelemetry(JSON.stringify({
+    type: "turn.completed",
+    usage: { input_tokens: 10, output_tokens: 2 }
+  }), "jsonl", "codex");
+  assert.deepEqual(requestedOnly.observed_models, []);
 });
 
 test("Claude telemetry aggregates terminal modelUsage instead of assistant-step usage", () => {
@@ -106,6 +123,36 @@ test("provider usage limits are classified as infrastructure failures", () => {
   assert.equal(isInfrastructureError("You've hit your usage limit."), true);
   assert.equal(isInfrastructureError("insufficient credits for this request"), true);
   assert.equal(isInfrastructureError("model refused the task"), false);
+});
+
+test("untrusted processes receive only allowlisted or explicitly passed environment variables", () => {
+  const secretName = "SKILLPROOF_TEST_SECRET";
+  const previous = process.env[secretName];
+  process.env[secretName] = "do-not-leak";
+  try {
+    const isolated = buildSafeEnvironment();
+    assert.equal(isolated[secretName], undefined);
+    const explicit = buildSafeEnvironment({
+      passthrough: [secretName],
+      overrides: { SKILLPROOF_MARKER: "safe" }
+    });
+    assert.equal(explicit[secretName], "do-not-leak");
+    assert.equal(explicit.SKILLPROOF_MARKER, "safe");
+  } finally {
+    if (previous === undefined) delete process.env[secretName];
+    else process.env[secretName] = previous;
+  }
+});
+
+test("Claude runs use an isolated home instead of the user profile", () => {
+  const agentHome = join("isolated", "agent-home");
+  const environment = buildRunnerEnvironment(
+    { preset: "claude" },
+    agentHome,
+  );
+  assert.equal(environment.HOME, agentHome);
+  assert.equal(environment.USERPROFILE, agentHome);
+  assert.equal(environment.CLAUDE_CONFIG_DIR, join(agentHome, ".claude"));
 });
 
 test("provider control files stay outside the candidate workspace", async () => {

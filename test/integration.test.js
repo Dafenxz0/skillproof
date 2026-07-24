@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { access, mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -35,4 +35,26 @@ test("demo executes a multimodel matrix and writes JSON, HTML, and badge", { tim
   assert.match(card, /SKILLPROOF \/ EVIDENCE/);
   assert.match(card, /generated from results\.json/);
   assert.equal(badge.schemaVersion, 1);
+});
+
+test("init creates a valid runnable fixture and assertion layout", async () => {
+  const output = await mkdtemp(join(tmpdir(), "skillproof-init-"));
+  const config = join(output, "skillproof.config.json");
+  await executeFile(process.execPath, [
+    "bin/skillproof.js",
+    "init",
+    "./skills/example",
+    "--config",
+    config
+  ], { cwd: repository });
+  await access(join(output, "fixtures", "positive", "task.txt"));
+  await access(join(output, "fixtures", "negative", "task.txt"));
+  await access(join(output, "assertions", "positive.mjs"));
+  await access(join(output, "assertions", "negative.mjs"));
+  const value = JSON.parse(await readFile(config, "utf8"));
+  assert.deepEqual(value.claims, {
+    quality: true,
+    activation: false,
+    efficiency: true
+  });
 });

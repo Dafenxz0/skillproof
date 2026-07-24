@@ -1,15 +1,15 @@
 {
   "benchmark": {
-    "id": "skillproof-self-test",
-    "title": "SkillProof real-agent self-test",
     "description": "A real-agent test of benchmark design, evidence interpretation, and adjacent-task restraint across two GPT-5.6 models and two reasoning settings.",
-    "mode": "development",
+    "id": "skillproof-self-test",
     "limitations": [
       "This public test corpus has four cases and one repeat; it is an engineering check, not release evidence.",
-      "Codex does not currently expose trusted skill-load telemetry in this runner, so automatic activation metrics may be inconclusive.",
+      "Codex does not currently expose trusted skill-load telemetry in this runner, so this benchmark does not claim activation.",
       "This Windows-only test opts into danger-full-access for trusted disposable fixtures because this Codex build degrades workspace-write to read-only; do not reuse that setting for hostile material.",
       "The corpus is stored beside the skill and can be overfit."
-    ]
+    ],
+    "mode": "development",
+    "title": "SkillProof real-agent self-test"
   },
   "cases": [
     {
@@ -124,14 +124,15 @@
     "version": "1.0.0"
   },
   "limitations": [
-    "This public development corpus has four cases and one repeat; it is an engineering check, not release evidence.",
-    "Codex does not currently expose trusted skill-load telemetry in this runner, so automatic activation metrics may be inconclusive.",
-    "This Windows-only development run opts into danger-full-access for trusted disposable fixtures because this Codex build degrades workspace-write to read-only; do not reuse that setting for hostile material.",
+    "This public test corpus has four cases and one repeat; it is an engineering check, not release evidence.",
+    "Codex does not currently expose trusted skill-load telemetry in this runner, so this benchmark does not claim activation.",
+    "This Windows-only test opts into danger-full-access for trusted disposable fixtures because this Codex build degrades workspace-write to read-only; do not reuse that setting for hostile material.",
     "The corpus is stored beside the skill and can be overfit.",
     "Fewer than three repeats were run per condition, so stochastic variance is weakly estimated.",
     "The corpus contains 2 positive and 2 negative case(s); broad release claims should use a larger frozen holdout.",
     "No independent judge was configured; quality dimensions outside deterministic assertions remain unmeasured.",
-    "Automatic activation was not instrumented for every run, so activation precision and recall may be inconclusive.",
+    "Activation was not claimed because trusted automatic skill-load telemetry was unavailable.",
+    "At least one runner reported only the requested model; runtime model identity was unavailable.",
     "SkillProof supervises processes but is not itself a security sandbox; hostile code requires an outer container or virtual machine.",
     "Results apply only to the recorded skill, corpus, runners, models, settings, and environment.",
     "The public evidence copy replaces local repository and user-home paths; metrics and outcomes are unchanged."
@@ -157,7 +158,44 @@
   "provenance": {
     "arch": "x64",
     "concurrency": 1,
-    "config_sha256": "e1adc18567b64a8cb38bf3f9d153b49fe94b67c8b227d3cb672827dd3167b563",
+    "config_sha256": "977b03f24191bb3b878313cc2efb8e95ee7ce5a348e7f96a64172e4a31f58e6d",
+    "environment_allowlist": {
+      "assertions": {
+        "adjacent-clamp-change/clamp-behavior": [],
+        "adjacent-metric-helper/median-behavior": [],
+        "audit-unsupported-claim/activation-limit": [],
+        "audit-unsupported-claim/claim-scope": [],
+        "audit-unsupported-claim/efficiency-gate": [],
+        "audit-unsupported-claim/publication-decision": [],
+        "audit-unsupported-claim/quality-evidence": [],
+        "repair-multimodel-benchmark/boundary-cases": [],
+        "repair-multimodel-benchmark/causal-protocol": [],
+        "repair-multimodel-benchmark/claim-boundaries": [],
+        "repair-multimodel-benchmark/exact-model-matrix": [],
+        "repair-multimodel-benchmark/quality-activation-efficiency": []
+      },
+      "defaults": [
+        "PATH",
+        "PATHEXT",
+        "SYSTEMROOT",
+        "WINDIR",
+        "TEMP",
+        "TMP",
+        "TMPDIR",
+        "LANG",
+        "LC_ALL",
+        "LC_CTYPE",
+        "TERM",
+        "NO_COLOR",
+        "FORCE_COLOR",
+        "CI"
+      ],
+      "judges": {},
+      "runners": {
+        "codex-luna-medium": [],
+        "codex-terra-high": []
+      }
+    },
     "git": {
       "commit": "77b28fff98d3bb4a813982c82cb2bb6a9cf23ed6",
       "dirty": true
@@ -170,6 +208,11 @@
       "codex-terra-high": "codex-cli 0.146.0-alpha.3.1"
     },
     "seed": 20260724
+  },
+  "publication": {
+    "redactions": [
+      "Local repository and user-home paths were replaced; benchmark metrics and outcomes are unchanged."
+    ]
   },
   "repeats": 1,
   "run_id": "proof-a5119bb4-84ea-4702-ac6e-f115b1ff92ef",
@@ -2988,776 +3031,827 @@
     "sha256": "24ec400e5549293faf9e766b8ca66a7f572c07101fb6f1720f21d397ffe34e98"
   },
   "summary": {
-    "verdict": {
-      "status": "passed",
-      "explanation": "Every measured runner passed the configured gates."
-    },
-    "runners": {
-      "codex-luna-medium": {
-        "runner_id": "codex-luna-medium",
-        "provider": "openai",
-        "model": "gpt-5.6-luna",
-        "conditions": {
-          "without_skill": {
-            "runs": 4,
-            "completed": 4,
-            "candidate_errors": 0,
-            "infrastructure_errors": 0,
-            "quality": {
-              "measured": 4,
-              "mean": 65,
-              "median": 80,
-              "p95": 100,
-              "minimum": 0,
-              "maximum": 100
-            },
-            "tokens": {
-              "measured": 4,
-              "mean": 65158.5,
-              "median": 69323.5,
-              "p95": 73816.55,
-              "minimum": 47879,
-              "maximum": 74108
-            },
-            "cost_usd": {
-              "measured": 0,
-              "mean": null,
-              "median": null,
-              "p95": null,
-              "minimum": null,
-              "maximum": null,
-              "total": null
-            },
-            "latency_ms": {
-              "measured": 4,
-              "mean": 33043.42807499999,
-              "median": 26735.60679999998,
-              "p95": 54587.59526,
-              "minimum": 19347.363499999978,
-              "maximum": 59355.13520000002
-            },
-            "evidence": {
-              "deterministic_only": 4
-            }
-          },
-          "skill_available_auto": {
-            "runs": 4,
-            "completed": 4,
-            "candidate_errors": 0,
-            "infrastructure_errors": 0,
-            "quality": {
-              "measured": 4,
-              "mean": 85,
-              "median": 100,
-              "p95": 100,
-              "minimum": 40,
-              "maximum": 100
-            },
-            "tokens": {
-              "measured": 4,
-              "mean": 128706.5,
-              "median": 92155.5,
-              "p95": 245969.49999999994,
-              "minimum": 60652,
-              "maximum": 269863
-            },
-            "cost_usd": {
-              "measured": 0,
-              "mean": null,
-              "median": null,
-              "p95": null,
-              "minimum": null,
-              "maximum": null,
-              "total": null
-            },
-            "latency_ms": {
-              "measured": 4,
-              "mean": 50235.27944999999,
-              "median": 31249.92934999999,
-              "p95": 103443.48934499992,
-              "minimum": 23088.14750000002,
-              "maximum": 115353.11159999995
-            },
-            "evidence": {
-              "deterministic_only": 4
-            }
-          },
-          "skill_forced": {
-            "runs": 4,
-            "completed": 4,
-            "candidate_errors": 0,
-            "infrastructure_errors": 0,
-            "quality": {
-              "measured": 4,
-              "mean": 90,
-              "median": 100,
-              "p95": 100,
-              "minimum": 60,
-              "maximum": 100
-            },
-            "tokens": {
-              "measured": 4,
-              "mean": 101935,
-              "median": 71008.5,
-              "p95": 178111.99999999994,
-              "minimum": 68735,
-              "maximum": 196988
-            },
-            "cost_usd": {
-              "measured": 0,
-              "mean": null,
-              "median": null,
-              "p95": null,
-              "minimum": null,
-              "maximum": null,
-              "total": null
-            },
-            "latency_ms": {
-              "measured": 4,
-              "mean": 59365.41125,
-              "median": 30339.249250000008,
-              "p95": 130936.27955499994,
-              "minimum": 28152.038,
-              "maximum": 148631.10849999997
-            },
-            "evidence": {
-              "deterministic_only": 4
-            }
-          }
-        },
-        "contrasts": {
-          "auto_vs_without": {
-            "treatment": "skill_available_auto",
-            "pairs": 2,
-            "cases": 2,
-            "quality_delta_points": 40,
-            "negative_quality_delta_points": 0,
-            "quality_confidence_interval": {
-              "lower": 40,
-              "upper": 40,
-              "confidence": 0.95,
-              "method": "task-cluster bootstrap"
-            },
-            "quality_wins": 2,
-            "quality_ties": 0,
-            "quality_losses": 0,
-            "tokens_delta": 32133.5,
-            "tokens_delta_percent": 66.56115572303433,
-            "cost_delta_usd": null,
-            "cost_delta_percent": null,
-            "latency_delta_ms": 50089.51989999993,
-            "latency_delta_percent": 93.06873323308444,
-            "efficiency_estimators": {
-              "tokens": "median paired delta",
-              "cost": "median paired delta",
-              "latency": "p95 paired delta"
-            },
-            "per_case": [
-              {
-                "case_id": "audit-unsupported-claim",
-                "title": "Scope an unsupported benchmark claim",
-                "applicability": "positive",
-                "delta": 40,
-                "baseline": 60,
-                "treatment": 100,
-                "repeats": 1,
-                "spread": 0
-              },
-              {
-                "case_id": "adjacent-metric-helper",
-                "title": "Do not overreach on a metric helper",
-                "applicability": "negative",
-                "delta": 0,
-                "baseline": 100,
-                "treatment": 100,
-                "repeats": 1,
-                "spread": 0
-              },
-              {
-                "case_id": "adjacent-clamp-change",
-                "title": "Do not overreach on an ordinary code task",
-                "applicability": "negative",
-                "delta": 0,
-                "baseline": 100,
-                "treatment": 100,
-                "repeats": 1,
-                "spread": 0
-              },
-              {
-                "case_id": "repair-multimodel-benchmark",
-                "title": "Repair a weak multimodel skill benchmark",
-                "applicability": "positive",
-                "delta": 40,
-                "baseline": 0,
-                "treatment": 40,
-                "repeats": 1,
-                "spread": 0
-              }
-            ]
-          },
-          "forced_vs_without": {
-            "treatment": "skill_forced",
-            "pairs": 2,
-            "cases": 2,
-            "quality_delta_points": 50,
-            "negative_quality_delta_points": 0,
-            "quality_confidence_interval": {
-              "lower": 40,
-              "upper": 60,
-              "confidence": 0.95,
-              "method": "task-cluster bootstrap"
-            },
-            "quality_wins": 2,
-            "quality_ties": 0,
-            "quality_losses": 0,
-            "tokens_delta": 10986.5,
-            "tokens_delta_percent": 23.4018551902053,
-            "cost_delta_usd": null,
-            "cost_delta_percent": null,
-            "latency_delta_ms": 77205.27847999994,
-            "latency_delta_percent": 134.67463665087394,
-            "efficiency_estimators": {
-              "tokens": "median paired delta",
-              "cost": "median paired delta",
-              "latency": "p95 paired delta"
-            },
-            "per_case": [
-              {
-                "case_id": "audit-unsupported-claim",
-                "title": "Scope an unsupported benchmark claim",
-                "applicability": "positive",
-                "delta": 40,
-                "baseline": 60,
-                "treatment": 100,
-                "repeats": 1,
-                "spread": 0
-              },
-              {
-                "case_id": "adjacent-metric-helper",
-                "title": "Do not overreach on a metric helper",
-                "applicability": "negative",
-                "delta": 0,
-                "baseline": 100,
-                "treatment": 100,
-                "repeats": 1,
-                "spread": 0
-              },
-              {
-                "case_id": "adjacent-clamp-change",
-                "title": "Do not overreach on an ordinary code task",
-                "applicability": "negative",
-                "delta": 0,
-                "baseline": 100,
-                "treatment": 100,
-                "repeats": 1,
-                "spread": 0
-              },
-              {
-                "case_id": "repair-multimodel-benchmark",
-                "title": "Repair a weak multimodel skill benchmark",
-                "applicability": "positive",
-                "delta": 60,
-                "baseline": 0,
-                "treatment": 60,
-                "repeats": 1,
-                "spread": 0
-              }
-            ]
-          }
-        },
-        "activation": {
-          "instrumented_runs": 0,
-          "total_auto_runs": 4,
-          "recall": {
-            "value": null,
-            "successes": 0,
-            "total": 0,
-            "confidence_interval": {
-              "lower": null,
-              "upper": null,
-              "confidence": 0.95,
-              "method": "Wilson"
-            }
-          },
-          "precision": {
-            "value": null,
-            "successes": 0,
-            "total": 0,
-            "confidence_interval": {
-              "lower": null,
-              "upper": null,
-              "confidence": 0.95,
-              "method": "Wilson"
-            }
-          },
-          "false_activation_rate": {
-            "value": null,
-            "successes": 0,
-            "total": 0,
-            "confidence_interval": {
-              "lower": null,
-              "upper": null,
-              "confidence": 0.95,
-              "method": "Wilson"
-            }
-          },
-          "activated_positive": 0,
-          "positive_runs": 0,
-          "activated_negative": 0,
-          "negative_runs": 0,
-          "uninstrumented_runs": 4,
-          "value": {
-            "recall": null,
-            "precision": null,
-            "false_activation_rate": null
-          }
-        },
-        "completeness": {
-          "expected_runs": 12,
-          "observed_runs": 12,
-          "infrastructure_errors": 0,
-          "valid_run_ratio": 1,
-          "complete": true
-        },
-        "regressions": {
-          "kind": "paired_quality_regression_events",
-          "label": "Paired quality regression events",
-          "threshold_drop_points": 3,
-          "count": 0,
-          "items": []
-        },
-        "verdict": {
-          "status": "passed",
-          "gates": [
-            {
-              "id": "run_completeness",
-              "value": 1,
-              "threshold": 1,
-              "unit": "ratio",
-              "status": "passed",
-              "expected_runs": 12,
-              "observed_runs": 12,
-              "infrastructure_errors": 0
-            },
-            {
-              "id": "quality_delta",
-              "value": 40,
-              "threshold": 0,
-              "unit": "points",
-              "status": "passed"
-            },
-            {
-              "id": "paired_quality_regression_events",
-              "value": 0,
-              "threshold": 0,
-              "unit": "count",
-              "status": "passed"
-            },
-            {
-              "id": "token_increase",
-              "value": 66.56115572303433,
-              "threshold": 100,
-              "unit": "percent",
-              "status": "passed"
-            },
-            {
-              "id": "latency_increase",
-              "value": 93.06873323308444,
-              "threshold": 150,
-              "unit": "percent",
-              "status": "passed"
-            }
-          ]
-        }
+    "claims": {
+      "activation": {
+        "requested": false,
+        "status": "not_measured"
       },
-      "codex-terra-high": {
-        "runner_id": "codex-terra-high",
-        "provider": "openai",
-        "model": "gpt-5.6-terra",
-        "conditions": {
-          "without_skill": {
-            "runs": 4,
-            "completed": 4,
-            "candidate_errors": 0,
-            "infrastructure_errors": 0,
-            "quality": {
-              "measured": 4,
-              "mean": 65,
-              "median": 80,
-              "p95": 100,
-              "minimum": 0,
-              "maximum": 100
-            },
-            "tokens": {
-              "measured": 4,
-              "mean": 78917.5,
-              "median": 77003.5,
-              "p95": 103005.65,
-              "minimum": 55260,
-              "maximum": 106403
-            },
-            "cost_usd": {
-              "measured": 0,
-              "mean": null,
-              "median": null,
-              "p95": null,
-              "minimum": null,
-              "maximum": null,
-              "total": null
-            },
-            "latency_ms": {
-              "measured": 4,
-              "mean": 43005.225575000004,
-              "median": 30956.020399999994,
-              "p95": 77693.80125500001,
-              "minimum": 24356.8496,
-              "maximum": 85752.01190000004
-            },
-            "evidence": {
-              "deterministic_only": 4
-            }
-          },
-          "skill_available_auto": {
-            "runs": 4,
-            "completed": 4,
-            "candidate_errors": 0,
-            "infrastructure_errors": 0,
-            "quality": {
-              "measured": 4,
-              "mean": 95,
-              "median": 100,
-              "p95": 100,
-              "minimum": 80,
-              "maximum": 100
-            },
-            "tokens": {
-              "measured": 4,
-              "mean": 96401.75,
-              "median": 87462.5,
-              "p95": 122643.19999999998,
-              "minimum": 81965,
-              "maximum": 128717
-            },
-            "cost_usd": {
-              "measured": 0,
-              "mean": null,
-              "median": null,
-              "p95": null,
-              "minimum": null,
-              "maximum": null,
-              "total": null
-            },
-            "latency_ms": {
-              "measured": 4,
-              "mean": 49446.416675000015,
-              "median": 30080.01885,
-              "p95": 98545.50117000003,
-              "minimum": 27255.915500000003,
-              "maximum": 110369.71350000007
-            },
-            "evidence": {
-              "deterministic_only": 4
-            }
-          },
-          "skill_forced": {
-            "runs": 4,
-            "completed": 4,
-            "candidate_errors": 0,
-            "infrastructure_errors": 0,
-            "quality": {
-              "measured": 4,
-              "mean": 95,
-              "median": 100,
-              "p95": 100,
-              "minimum": 80,
-              "maximum": 100
-            },
-            "tokens": {
-              "measured": 4,
-              "mean": 113185.25,
-              "median": 91138.5,
-              "p95": 179170.89999999997,
-              "minimum": 76312,
-              "maximum": 194152
-            },
-            "cost_usd": {
-              "measured": 0,
-              "mean": null,
-              "median": null,
-              "p95": null,
-              "minimum": null,
-              "maximum": null,
-              "total": null
-            },
-            "latency_ms": {
-              "measured": 4,
-              "mean": 57918.688100000014,
-              "median": 33164.25524999998,
-              "p95": 124369.50440500001,
-              "minimum": 24952.570000000003,
-              "maximum": 140393.67190000007
-            },
-            "evidence": {
-              "deterministic_only": 4
-            }
-          }
-        },
-        "contrasts": {
-          "auto_vs_without": {
-            "treatment": "skill_available_auto",
-            "pairs": 2,
-            "cases": 2,
-            "quality_delta_points": 60,
-            "negative_quality_delta_points": 0,
-            "quality_confidence_interval": {
-              "lower": 40,
-              "upper": 80,
-              "confidence": 0.95,
-              "method": "task-cluster bootstrap"
-            },
-            "quality_wins": 2,
-            "quality_ties": 0,
-            "quality_losses": 0,
-            "tokens_delta": 17013,
-            "tokens_delta_percent": 18.82119370120238,
-            "cost_delta_usd": null,
-            "cost_delta_percent": null,
-            "latency_delta_ms": 21564.279880000016,
-            "latency_delta_percent": 27.026264642539267,
-            "efficiency_estimators": {
-              "tokens": "median paired delta",
-              "cost": "median paired delta",
-              "latency": "p95 paired delta"
-            },
-            "per_case": [
-              {
-                "case_id": "audit-unsupported-claim",
-                "title": "Scope an unsupported benchmark claim",
-                "applicability": "positive",
-                "delta": 40,
-                "baseline": 60,
-                "treatment": 100,
-                "repeats": 1,
-                "spread": 0
-              },
-              {
-                "case_id": "adjacent-clamp-change",
-                "title": "Do not overreach on an ordinary code task",
-                "applicability": "negative",
-                "delta": 0,
-                "baseline": 100,
-                "treatment": 100,
-                "repeats": 1,
-                "spread": 0
-              },
-              {
-                "case_id": "adjacent-metric-helper",
-                "title": "Do not overreach on a metric helper",
-                "applicability": "negative",
-                "delta": 0,
-                "baseline": 100,
-                "treatment": 100,
-                "repeats": 1,
-                "spread": 0
-              },
-              {
-                "case_id": "repair-multimodel-benchmark",
-                "title": "Repair a weak multimodel skill benchmark",
-                "applicability": "positive",
-                "delta": 80,
-                "baseline": 0,
-                "treatment": 80,
-                "repeats": 1,
-                "spread": 0
-              }
-            ]
-          },
-          "forced_vs_without": {
-            "treatment": "skill_forced",
-            "pairs": 2,
-            "cases": 2,
-            "quality_delta_points": 60,
-            "negative_quality_delta_points": 0,
-            "quality_confidence_interval": {
-              "lower": 40,
-              "upper": 80,
-              "confidence": 0.95,
-              "method": "task-cluster bootstrap"
-            },
-            "quality_wins": 2,
-            "quality_ties": 0,
-            "quality_losses": 0,
-            "tokens_delta": 19399,
-            "tokens_delta_percent": 31.678201703940225,
-            "cost_delta_usd": null,
-            "cost_delta_percent": null,
-            "latency_delta_ms": 46877.58930500001,
-            "latency_delta_percent": 55.6087843222076,
-            "efficiency_estimators": {
-              "tokens": "median paired delta",
-              "cost": "median paired delta",
-              "latency": "p95 paired delta"
-            },
-            "per_case": [
-              {
-                "case_id": "audit-unsupported-claim",
-                "title": "Scope an unsupported benchmark claim",
-                "applicability": "positive",
-                "delta": 40,
-                "baseline": 60,
-                "treatment": 100,
-                "repeats": 1,
-                "spread": 0
-              },
-              {
-                "case_id": "adjacent-clamp-change",
-                "title": "Do not overreach on an ordinary code task",
-                "applicability": "negative",
-                "delta": 0,
-                "baseline": 100,
-                "treatment": 100,
-                "repeats": 1,
-                "spread": 0
-              },
-              {
-                "case_id": "adjacent-metric-helper",
-                "title": "Do not overreach on a metric helper",
-                "applicability": "negative",
-                "delta": 0,
-                "baseline": 100,
-                "treatment": 100,
-                "repeats": 1,
-                "spread": 0
-              },
-              {
-                "case_id": "repair-multimodel-benchmark",
-                "title": "Repair a weak multimodel skill benchmark",
-                "applicability": "positive",
-                "delta": 80,
-                "baseline": 0,
-                "treatment": 80,
-                "repeats": 1,
-                "spread": 0
-              }
-            ]
-          }
-        },
-        "activation": {
-          "instrumented_runs": 0,
-          "total_auto_runs": 4,
-          "recall": {
-            "value": null,
-            "successes": 0,
-            "total": 0,
-            "confidence_interval": {
-              "lower": null,
-              "upper": null,
-              "confidence": 0.95,
-              "method": "Wilson"
-            }
-          },
-          "precision": {
-            "value": null,
-            "successes": 0,
-            "total": 0,
-            "confidence_interval": {
-              "lower": null,
-              "upper": null,
-              "confidence": 0.95,
-              "method": "Wilson"
-            }
-          },
-          "false_activation_rate": {
-            "value": null,
-            "successes": 0,
-            "total": 0,
-            "confidence_interval": {
-              "lower": null,
-              "upper": null,
-              "confidence": 0.95,
-              "method": "Wilson"
-            }
-          },
-          "activated_positive": 0,
-          "positive_runs": 0,
-          "activated_negative": 0,
-          "negative_runs": 0,
-          "uninstrumented_runs": 4,
-          "value": {
-            "recall": null,
-            "precision": null,
-            "false_activation_rate": null
-          }
-        },
-        "completeness": {
-          "expected_runs": 12,
-          "observed_runs": 12,
-          "infrastructure_errors": 0,
-          "valid_run_ratio": 1,
-          "complete": true
-        },
-        "regressions": {
-          "kind": "paired_quality_regression_events",
-          "label": "Paired quality regression events",
-          "threshold_drop_points": 3,
-          "count": 0,
-          "items": []
-        },
-        "verdict": {
-          "status": "passed",
-          "gates": [
-            {
-              "id": "run_completeness",
-              "value": 1,
-              "threshold": 1,
-              "unit": "ratio",
-              "status": "passed",
-              "expected_runs": 12,
-              "observed_runs": 12,
-              "infrastructure_errors": 0
-            },
-            {
-              "id": "quality_delta",
-              "value": 60,
-              "threshold": 0,
-              "unit": "points",
-              "status": "passed"
-            },
-            {
-              "id": "paired_quality_regression_events",
-              "value": 0,
-              "threshold": 0,
-              "unit": "count",
-              "status": "passed"
-            },
-            {
-              "id": "token_increase",
-              "value": 18.82119370120238,
-              "threshold": 100,
-              "unit": "percent",
-              "status": "passed"
-            },
-            {
-              "id": "latency_increase",
-              "value": 27.026264642539267,
-              "threshold": 150,
-              "unit": "percent",
-              "status": "passed"
-            }
-          ]
-        }
+      "efficiency": {
+        "requested": true,
+        "status": "verified"
+      },
+      "quality": {
+        "requested": true,
+        "status": "verified"
       }
     },
     "run_counts": {
-      "planned": 24,
-      "completed": 24,
       "candidate_errors": 0,
-      "infrastructure_errors": 0
+      "completed": 24,
+      "infrastructure_errors": 0,
+      "planned": 24
+    },
+    "runners": {
+      "codex-luna-medium": {
+        "activation": {
+          "activated_negative": 0,
+          "activated_positive": 0,
+          "false_activation_rate": {
+            "confidence_interval": {
+              "confidence": 0.95,
+              "lower": null,
+              "method": "Wilson",
+              "upper": null
+            },
+            "successes": 0,
+            "total": 0,
+            "value": null
+          },
+          "instrumented_runs": 0,
+          "negative_runs": 0,
+          "positive_runs": 0,
+          "precision": {
+            "confidence_interval": {
+              "confidence": 0.95,
+              "lower": null,
+              "method": "Wilson",
+              "upper": null
+            },
+            "successes": 0,
+            "total": 0,
+            "value": null
+          },
+          "recall": {
+            "confidence_interval": {
+              "confidence": 0.95,
+              "lower": null,
+              "method": "Wilson",
+              "upper": null
+            },
+            "successes": 0,
+            "total": 0,
+            "value": null
+          },
+          "total_auto_runs": 4,
+          "uninstrumented_runs": 4,
+          "value": {
+            "false_activation_rate": null,
+            "precision": null,
+            "recall": null
+          }
+        },
+        "claims": {
+          "activation": {
+            "requested": false,
+            "status": "not_measured"
+          },
+          "efficiency": {
+            "requested": true,
+            "status": "verified"
+          },
+          "quality": {
+            "requested": true,
+            "status": "verified"
+          }
+        },
+        "completeness": {
+          "complete": true,
+          "expected_runs": 12,
+          "infrastructure_errors": 0,
+          "observed_runs": 12,
+          "valid_run_ratio": 1
+        },
+        "conditions": {
+          "skill_available_auto": {
+            "candidate_errors": 0,
+            "completed": 4,
+            "cost_usd": {
+              "maximum": null,
+              "mean": null,
+              "measured": 0,
+              "median": null,
+              "minimum": null,
+              "p95": null,
+              "total": null
+            },
+            "evidence": {
+              "deterministic_only": 4
+            },
+            "infrastructure_errors": 0,
+            "latency_ms": {
+              "maximum": 115353.11159999995,
+              "mean": 50235.27944999999,
+              "measured": 4,
+              "median": 31249.92934999999,
+              "minimum": 23088.14750000002,
+              "p95": 103443.48934499992
+            },
+            "quality": {
+              "maximum": 100,
+              "mean": 85,
+              "measured": 4,
+              "median": 100,
+              "minimum": 40,
+              "p95": 100
+            },
+            "runs": 4,
+            "tokens": {
+              "maximum": 269863,
+              "mean": 128706.5,
+              "measured": 4,
+              "median": 92155.5,
+              "minimum": 60652,
+              "p95": 245969.49999999994
+            }
+          },
+          "skill_forced": {
+            "candidate_errors": 0,
+            "completed": 4,
+            "cost_usd": {
+              "maximum": null,
+              "mean": null,
+              "measured": 0,
+              "median": null,
+              "minimum": null,
+              "p95": null,
+              "total": null
+            },
+            "evidence": {
+              "deterministic_only": 4
+            },
+            "infrastructure_errors": 0,
+            "latency_ms": {
+              "maximum": 148631.10849999997,
+              "mean": 59365.41125,
+              "measured": 4,
+              "median": 30339.249250000008,
+              "minimum": 28152.038,
+              "p95": 130936.27955499994
+            },
+            "quality": {
+              "maximum": 100,
+              "mean": 90,
+              "measured": 4,
+              "median": 100,
+              "minimum": 60,
+              "p95": 100
+            },
+            "runs": 4,
+            "tokens": {
+              "maximum": 196988,
+              "mean": 101935,
+              "measured": 4,
+              "median": 71008.5,
+              "minimum": 68735,
+              "p95": 178111.99999999994
+            }
+          },
+          "without_skill": {
+            "candidate_errors": 0,
+            "completed": 4,
+            "cost_usd": {
+              "maximum": null,
+              "mean": null,
+              "measured": 0,
+              "median": null,
+              "minimum": null,
+              "p95": null,
+              "total": null
+            },
+            "evidence": {
+              "deterministic_only": 4
+            },
+            "infrastructure_errors": 0,
+            "latency_ms": {
+              "maximum": 59355.13520000002,
+              "mean": 33043.42807499999,
+              "measured": 4,
+              "median": 26735.60679999998,
+              "minimum": 19347.363499999978,
+              "p95": 54587.59526
+            },
+            "quality": {
+              "maximum": 100,
+              "mean": 65,
+              "measured": 4,
+              "median": 80,
+              "minimum": 0,
+              "p95": 100
+            },
+            "runs": 4,
+            "tokens": {
+              "maximum": 74108,
+              "mean": 65158.5,
+              "measured": 4,
+              "median": 69323.5,
+              "minimum": 47879,
+              "p95": 73816.55
+            }
+          }
+        },
+        "contrasts": {
+          "auto_vs_without": {
+            "cases": 2,
+            "cost_delta_percent": null,
+            "cost_delta_usd": null,
+            "efficiency_estimators": {
+              "cost": "median paired delta",
+              "latency": "p95 paired delta",
+              "tokens": "median paired delta"
+            },
+            "latency_delta_ms": 50089.51989999993,
+            "latency_delta_percent": 93.06873323308444,
+            "negative_quality_delta_points": 0,
+            "pairs": 2,
+            "per_case": [
+              {
+                "applicability": "positive",
+                "baseline": 60,
+                "case_id": "audit-unsupported-claim",
+                "delta": 40,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Scope an unsupported benchmark claim",
+                "treatment": 100
+              },
+              {
+                "applicability": "negative",
+                "baseline": 100,
+                "case_id": "adjacent-metric-helper",
+                "delta": 0,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Do not overreach on a metric helper",
+                "treatment": 100
+              },
+              {
+                "applicability": "negative",
+                "baseline": 100,
+                "case_id": "adjacent-clamp-change",
+                "delta": 0,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Do not overreach on an ordinary code task",
+                "treatment": 100
+              },
+              {
+                "applicability": "positive",
+                "baseline": 0,
+                "case_id": "repair-multimodel-benchmark",
+                "delta": 40,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Repair a weak multimodel skill benchmark",
+                "treatment": 40
+              }
+            ],
+            "quality_confidence_interval": {
+              "confidence": 0.95,
+              "lower": 40,
+              "method": "task-cluster bootstrap",
+              "upper": 40
+            },
+            "quality_delta_points": 40,
+            "quality_losses": 0,
+            "quality_ties": 0,
+            "quality_wins": 2,
+            "tokens_delta": 32133.5,
+            "tokens_delta_percent": 66.56115572303433,
+            "treatment": "skill_available_auto"
+          },
+          "forced_vs_without": {
+            "cases": 2,
+            "cost_delta_percent": null,
+            "cost_delta_usd": null,
+            "efficiency_estimators": {
+              "cost": "median paired delta",
+              "latency": "p95 paired delta",
+              "tokens": "median paired delta"
+            },
+            "latency_delta_ms": 77205.27847999994,
+            "latency_delta_percent": 134.67463665087394,
+            "negative_quality_delta_points": 0,
+            "pairs": 2,
+            "per_case": [
+              {
+                "applicability": "positive",
+                "baseline": 60,
+                "case_id": "audit-unsupported-claim",
+                "delta": 40,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Scope an unsupported benchmark claim",
+                "treatment": 100
+              },
+              {
+                "applicability": "negative",
+                "baseline": 100,
+                "case_id": "adjacent-metric-helper",
+                "delta": 0,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Do not overreach on a metric helper",
+                "treatment": 100
+              },
+              {
+                "applicability": "negative",
+                "baseline": 100,
+                "case_id": "adjacent-clamp-change",
+                "delta": 0,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Do not overreach on an ordinary code task",
+                "treatment": 100
+              },
+              {
+                "applicability": "positive",
+                "baseline": 0,
+                "case_id": "repair-multimodel-benchmark",
+                "delta": 60,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Repair a weak multimodel skill benchmark",
+                "treatment": 60
+              }
+            ],
+            "quality_confidence_interval": {
+              "confidence": 0.95,
+              "lower": 40,
+              "method": "task-cluster bootstrap",
+              "upper": 60
+            },
+            "quality_delta_points": 50,
+            "quality_losses": 0,
+            "quality_ties": 0,
+            "quality_wins": 2,
+            "tokens_delta": 10986.5,
+            "tokens_delta_percent": 23.4018551902053,
+            "treatment": "skill_forced"
+          }
+        },
+        "model": "gpt-5.6-luna",
+        "model_identity": {
+          "measured_runs": 0,
+          "observed_models": [],
+          "status": "requested_only",
+          "total_runs": 12,
+          "verified_runs": 0
+        },
+        "provider": "openai",
+        "regressions": {
+          "count": 0,
+          "items": [],
+          "kind": "paired_quality_regression_events",
+          "label": "Paired quality regression events",
+          "threshold_drop_points": 3
+        },
+        "runner_id": "codex-luna-medium",
+        "verdict": {
+          "gates": [
+            {
+              "expected_runs": 12,
+              "id": "run_completeness",
+              "infrastructure_errors": 0,
+              "observed_runs": 12,
+              "status": "passed",
+              "threshold": 1,
+              "unit": "ratio",
+              "value": 1
+            },
+            {
+              "id": "quality_delta",
+              "status": "passed",
+              "threshold": 0,
+              "unit": "points",
+              "value": 40
+            },
+            {
+              "id": "paired_quality_regression_events",
+              "status": "passed",
+              "threshold": 0,
+              "unit": "count",
+              "value": 0
+            },
+            {
+              "id": "token_increase",
+              "status": "passed",
+              "threshold": 100,
+              "unit": "percent",
+              "value": 66.56115572303433
+            },
+            {
+              "id": "latency_increase",
+              "status": "passed",
+              "threshold": 150,
+              "unit": "percent",
+              "value": 93.06873323308444
+            }
+          ],
+          "status": "passed"
+        }
+      },
+      "codex-terra-high": {
+        "activation": {
+          "activated_negative": 0,
+          "activated_positive": 0,
+          "false_activation_rate": {
+            "confidence_interval": {
+              "confidence": 0.95,
+              "lower": null,
+              "method": "Wilson",
+              "upper": null
+            },
+            "successes": 0,
+            "total": 0,
+            "value": null
+          },
+          "instrumented_runs": 0,
+          "negative_runs": 0,
+          "positive_runs": 0,
+          "precision": {
+            "confidence_interval": {
+              "confidence": 0.95,
+              "lower": null,
+              "method": "Wilson",
+              "upper": null
+            },
+            "successes": 0,
+            "total": 0,
+            "value": null
+          },
+          "recall": {
+            "confidence_interval": {
+              "confidence": 0.95,
+              "lower": null,
+              "method": "Wilson",
+              "upper": null
+            },
+            "successes": 0,
+            "total": 0,
+            "value": null
+          },
+          "total_auto_runs": 4,
+          "uninstrumented_runs": 4,
+          "value": {
+            "false_activation_rate": null,
+            "precision": null,
+            "recall": null
+          }
+        },
+        "claims": {
+          "activation": {
+            "requested": false,
+            "status": "not_measured"
+          },
+          "efficiency": {
+            "requested": true,
+            "status": "verified"
+          },
+          "quality": {
+            "requested": true,
+            "status": "verified"
+          }
+        },
+        "completeness": {
+          "complete": true,
+          "expected_runs": 12,
+          "infrastructure_errors": 0,
+          "observed_runs": 12,
+          "valid_run_ratio": 1
+        },
+        "conditions": {
+          "skill_available_auto": {
+            "candidate_errors": 0,
+            "completed": 4,
+            "cost_usd": {
+              "maximum": null,
+              "mean": null,
+              "measured": 0,
+              "median": null,
+              "minimum": null,
+              "p95": null,
+              "total": null
+            },
+            "evidence": {
+              "deterministic_only": 4
+            },
+            "infrastructure_errors": 0,
+            "latency_ms": {
+              "maximum": 110369.71350000007,
+              "mean": 49446.416675000015,
+              "measured": 4,
+              "median": 30080.01885,
+              "minimum": 27255.915500000003,
+              "p95": 98545.50117000003
+            },
+            "quality": {
+              "maximum": 100,
+              "mean": 95,
+              "measured": 4,
+              "median": 100,
+              "minimum": 80,
+              "p95": 100
+            },
+            "runs": 4,
+            "tokens": {
+              "maximum": 128717,
+              "mean": 96401.75,
+              "measured": 4,
+              "median": 87462.5,
+              "minimum": 81965,
+              "p95": 122643.19999999998
+            }
+          },
+          "skill_forced": {
+            "candidate_errors": 0,
+            "completed": 4,
+            "cost_usd": {
+              "maximum": null,
+              "mean": null,
+              "measured": 0,
+              "median": null,
+              "minimum": null,
+              "p95": null,
+              "total": null
+            },
+            "evidence": {
+              "deterministic_only": 4
+            },
+            "infrastructure_errors": 0,
+            "latency_ms": {
+              "maximum": 140393.67190000007,
+              "mean": 57918.688100000014,
+              "measured": 4,
+              "median": 33164.25524999998,
+              "minimum": 24952.570000000003,
+              "p95": 124369.50440500001
+            },
+            "quality": {
+              "maximum": 100,
+              "mean": 95,
+              "measured": 4,
+              "median": 100,
+              "minimum": 80,
+              "p95": 100
+            },
+            "runs": 4,
+            "tokens": {
+              "maximum": 194152,
+              "mean": 113185.25,
+              "measured": 4,
+              "median": 91138.5,
+              "minimum": 76312,
+              "p95": 179170.89999999997
+            }
+          },
+          "without_skill": {
+            "candidate_errors": 0,
+            "completed": 4,
+            "cost_usd": {
+              "maximum": null,
+              "mean": null,
+              "measured": 0,
+              "median": null,
+              "minimum": null,
+              "p95": null,
+              "total": null
+            },
+            "evidence": {
+              "deterministic_only": 4
+            },
+            "infrastructure_errors": 0,
+            "latency_ms": {
+              "maximum": 85752.01190000004,
+              "mean": 43005.225575000004,
+              "measured": 4,
+              "median": 30956.020399999994,
+              "minimum": 24356.8496,
+              "p95": 77693.80125500001
+            },
+            "quality": {
+              "maximum": 100,
+              "mean": 65,
+              "measured": 4,
+              "median": 80,
+              "minimum": 0,
+              "p95": 100
+            },
+            "runs": 4,
+            "tokens": {
+              "maximum": 106403,
+              "mean": 78917.5,
+              "measured": 4,
+              "median": 77003.5,
+              "minimum": 55260,
+              "p95": 103005.65
+            }
+          }
+        },
+        "contrasts": {
+          "auto_vs_without": {
+            "cases": 2,
+            "cost_delta_percent": null,
+            "cost_delta_usd": null,
+            "efficiency_estimators": {
+              "cost": "median paired delta",
+              "latency": "p95 paired delta",
+              "tokens": "median paired delta"
+            },
+            "latency_delta_ms": 21564.279880000016,
+            "latency_delta_percent": 27.026264642539267,
+            "negative_quality_delta_points": 0,
+            "pairs": 2,
+            "per_case": [
+              {
+                "applicability": "positive",
+                "baseline": 60,
+                "case_id": "audit-unsupported-claim",
+                "delta": 40,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Scope an unsupported benchmark claim",
+                "treatment": 100
+              },
+              {
+                "applicability": "negative",
+                "baseline": 100,
+                "case_id": "adjacent-clamp-change",
+                "delta": 0,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Do not overreach on an ordinary code task",
+                "treatment": 100
+              },
+              {
+                "applicability": "negative",
+                "baseline": 100,
+                "case_id": "adjacent-metric-helper",
+                "delta": 0,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Do not overreach on a metric helper",
+                "treatment": 100
+              },
+              {
+                "applicability": "positive",
+                "baseline": 0,
+                "case_id": "repair-multimodel-benchmark",
+                "delta": 80,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Repair a weak multimodel skill benchmark",
+                "treatment": 80
+              }
+            ],
+            "quality_confidence_interval": {
+              "confidence": 0.95,
+              "lower": 40,
+              "method": "task-cluster bootstrap",
+              "upper": 80
+            },
+            "quality_delta_points": 60,
+            "quality_losses": 0,
+            "quality_ties": 0,
+            "quality_wins": 2,
+            "tokens_delta": 17013,
+            "tokens_delta_percent": 18.82119370120238,
+            "treatment": "skill_available_auto"
+          },
+          "forced_vs_without": {
+            "cases": 2,
+            "cost_delta_percent": null,
+            "cost_delta_usd": null,
+            "efficiency_estimators": {
+              "cost": "median paired delta",
+              "latency": "p95 paired delta",
+              "tokens": "median paired delta"
+            },
+            "latency_delta_ms": 46877.58930500001,
+            "latency_delta_percent": 55.6087843222076,
+            "negative_quality_delta_points": 0,
+            "pairs": 2,
+            "per_case": [
+              {
+                "applicability": "positive",
+                "baseline": 60,
+                "case_id": "audit-unsupported-claim",
+                "delta": 40,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Scope an unsupported benchmark claim",
+                "treatment": 100
+              },
+              {
+                "applicability": "negative",
+                "baseline": 100,
+                "case_id": "adjacent-clamp-change",
+                "delta": 0,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Do not overreach on an ordinary code task",
+                "treatment": 100
+              },
+              {
+                "applicability": "negative",
+                "baseline": 100,
+                "case_id": "adjacent-metric-helper",
+                "delta": 0,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Do not overreach on a metric helper",
+                "treatment": 100
+              },
+              {
+                "applicability": "positive",
+                "baseline": 0,
+                "case_id": "repair-multimodel-benchmark",
+                "delta": 80,
+                "repeats": 1,
+                "spread": 0,
+                "title": "Repair a weak multimodel skill benchmark",
+                "treatment": 80
+              }
+            ],
+            "quality_confidence_interval": {
+              "confidence": 0.95,
+              "lower": 40,
+              "method": "task-cluster bootstrap",
+              "upper": 80
+            },
+            "quality_delta_points": 60,
+            "quality_losses": 0,
+            "quality_ties": 0,
+            "quality_wins": 2,
+            "tokens_delta": 19399,
+            "tokens_delta_percent": 31.678201703940225,
+            "treatment": "skill_forced"
+          }
+        },
+        "model": "gpt-5.6-terra",
+        "model_identity": {
+          "measured_runs": 0,
+          "observed_models": [],
+          "status": "requested_only",
+          "total_runs": 12,
+          "verified_runs": 0
+        },
+        "provider": "openai",
+        "regressions": {
+          "count": 0,
+          "items": [],
+          "kind": "paired_quality_regression_events",
+          "label": "Paired quality regression events",
+          "threshold_drop_points": 3
+        },
+        "runner_id": "codex-terra-high",
+        "verdict": {
+          "gates": [
+            {
+              "expected_runs": 12,
+              "id": "run_completeness",
+              "infrastructure_errors": 0,
+              "observed_runs": 12,
+              "status": "passed",
+              "threshold": 1,
+              "unit": "ratio",
+              "value": 1
+            },
+            {
+              "id": "quality_delta",
+              "status": "passed",
+              "threshold": 0,
+              "unit": "points",
+              "value": 60
+            },
+            {
+              "id": "paired_quality_regression_events",
+              "status": "passed",
+              "threshold": 0,
+              "unit": "count",
+              "value": 0
+            },
+            {
+              "id": "token_increase",
+              "status": "passed",
+              "threshold": 100,
+              "unit": "percent",
+              "value": 18.82119370120238
+            },
+            {
+              "id": "latency_increase",
+              "status": "passed",
+              "threshold": 150,
+              "unit": "percent",
+              "value": 27.026264642539267
+            }
+          ],
+          "status": "passed"
+        }
+      }
+    },
+    "verdict": {
+      "explanation": "Every measured runner passed the configured gates.",
+      "status": "passed"
     }
-  },
-  "publication": {
-    "redactions": [
-      "Local repository and user-home paths were replaced; benchmark metrics and outcomes are unchanged."
-    ]
   }
 }

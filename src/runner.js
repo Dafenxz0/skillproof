@@ -8,6 +8,46 @@ import { finiteNumber, id, pathExists, sha256, writeJson } from "./utils.js";
 const OUTPUT_LIMIT = 16 * 1024 * 1024;
 const DEFAULT_ARTIFACT_MAX_FILES = 10_000;
 const DEFAULT_ARTIFACT_MAX_BYTES = 256 * 1024 * 1024;
+export const SAFE_ENV_KEYS = [
+  "PATH",
+  "PATHEXT",
+  "SYSTEMROOT",
+  "WINDIR",
+  "TEMP",
+  "TMP",
+  "TMPDIR",
+  "LANG",
+  "LC_ALL",
+  "LC_CTYPE",
+  "TERM",
+  "NO_COLOR",
+  "FORCE_COLOR",
+  "CI"
+];
+
+export function buildSafeEnvironment({ passthrough = [], overrides = {} } = {}) {
+  const environment = {};
+  for (const key of [...SAFE_ENV_KEYS, ...passthrough]) {
+    if (process.env[key] !== undefined) environment[key] = process.env[key];
+  }
+  return { ...environment, ...overrides };
+}
+
+export function buildRunnerEnvironment(runner, agentHome) {
+  return buildSafeEnvironment({
+    passthrough: runner.env_passthrough,
+    overrides: {
+      ...(runner.env ?? {}),
+      ...(runner.preset === "codex" ? { CODEX_HOME: agentHome } : {}),
+      ...(runner.preset === "claude" ? {
+        HOME: agentHome,
+        USERPROFILE: agentHome,
+        CLAUDE_CONFIG_DIR: join(agentHome, ".claude"),
+        CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "1"
+      } : {})
+    }
+  });
+}
 
 export async function executeRun(context) {
   const tempRoot = await mkdtemp(join(tmpdir(), "skillproof-"));
@@ -192,11 +232,20 @@ async function executeRunInTemp(context, tempRoot) {
 }
 
 async function prepareRunnerCredentials(runner, agentHome) {
-  if (runner.preset !== "codex" || runner.inherit_auth !== true) return;
-  const sourceHome = process.env.CODEX_HOME || join(homedir(), ".codex");
-  const source = join(sourceHome, "auth.json");
+  if (runner.inherit_auth !== true) return;
+  const codex = runner.preset === "codex";
+  const claude = runner.preset === "claude";
+  if (!codex && !claude) return;
+  const sourceHome = codex
+    ? process.env.CODEX_HOME || join(homedir(), ".codex")
+    : process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
+  const source = join(sourceHome, codex ? "auth.json" : ".credentials.json");
   if (!await pathExists(source)) return;
-  await cp(source, join(agentHome, "auth.json"), { force: true });
+  const destination = codex
+    ? join(agentHome, "auth.json")
+    : join(agentHome, ".claude", ".credentials.json");
+  await mkdir(dirname(destination), { recursive: true });
+  await cp(source, destination, { force: true });
 }
 
 async function removeWorkspaceSkillInstallation(installation, workspace) {
@@ -337,14 +386,7 @@ async function runCommandAdapter(options) {
   const invocation = await buildInvocation(options, replacements);
   const args = invocation.args.map((value) => replacePlaceholders(value, replacements));
   const command = replacePlaceholders(options.runner.command, replacements);
-  const environment = {
-    ...process.env,
-    ...(options.runner.env ?? {}),
-    ...(options.runner.preset === "codex" ? { CODEX_HOME: options.agentHome } : {}),
-    ...(options.runner.preset === "claude"
-      ? { CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "1" }
-      : {})
-  };
+  const environment = buildRunnerEnvironment(options.runner, options.agentHome);
   const processResult = await executeCommand(command, args, {
     cwd: options.workspace,
     env: environment,
@@ -495,16 +537,19 @@ export async function runAssertions(assertions, context) {
         replacePlaceholders(assertion.command, replacements),
         (assertion.args ?? []).map((value) => replacePlaceholders(value, replacements)),
         {
-        cwd: assertion.cwd
-          ? resolve(context.configDir, replacePlaceholders(assertion.cwd, replacements))
-          : context.configDir,
-        env: {
-          ...process.env,
-          SKILLPROOF_WORKSPACE: context.workspace,
-          SKILLPROOF_CONFIG_DIR: context.configDir,
-          SKILLPROOF_CASE_ID: context.testCase.id,
-          SKILLPROOF_RUN_ID: context.runId
-          },
+          cwd: assertion.cwd
+            ? resolve(context.configDir, replacePlaceholders(assertion.cwd, replacements))
+            : context.configDir,
+          env: buildSafeEnvironment({
+            passthrough: assertion.env_passthrough,
+            overrides: {
+              ...(assertion.env ?? {}),
+              SKILLPROOF_WORKSPACE: context.workspace,
+              SKILLPROOF_CONFIG_DIR: context.configDir,
+              SKILLPROOF_CASE_ID: context.testCase.id,
+              SKILLPROOF_RUN_ID: context.runId
+            }
+          }),
           timeoutMs: assertion.timeout_ms ?? 120000
         },
       );
@@ -696,7 +741,7 @@ export function parseTelemetry(stdout, parser, preset = "generic") {
     return {
       usage: terminal?.usage ?? {},
       observed_cost_usd: null,
-      observed_models: [],
+      observed_models: observedModelsFromObjects(objects),
       protocol_complete: Boolean(terminal),
       terminal_error: terminal?.type === "turn.failed"
         ? describeTerminalError(terminal, "Codex turn failed")
@@ -733,6 +778,15 @@ export function parseTelemetry(stdout, parser, preset = "generic") {
     protocol_complete: Boolean(terminal),
     terminal_error: null
   };
+}
+
+function observedModelsFromObjects(objects) {
+  return [...new Set(objects.flatMap((object) => [
+    object?.model,
+    object?.model_id,
+    object?.model_name,
+    object?.message?.model
+  ]).filter((value) => typeof value === "string" && value.trim()))];
 }
 
 function describeTerminalError(terminal, fallback) {

@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { estimateCost, loadPricingCatalog, normalizeUsage } from "../src/pricing.js";
 
 const catalog = {
@@ -241,4 +244,21 @@ test("bundled Sonnet 5 switches to standard pricing on September 1", async () =>
   }, bundled);
   assert.equal(result.estimated_api_equivalent_usd, 18);
   assert.equal(result.pricing_valid_from, "2026-09-01");
+});
+
+test("non-USD pricing catalogs are rejected", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "skillproof-pricing-"));
+  try {
+    await writeFile(join(directory, "catalog.json"), JSON.stringify({
+      version: 1,
+      currency: "EUR",
+      models: {}
+    }));
+    await assert.rejects(
+      loadPricingCatalog("catalog.json", directory),
+      /supports USD only/,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

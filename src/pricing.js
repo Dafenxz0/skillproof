@@ -8,8 +8,13 @@ const bundledCatalogPath = resolve(
 );
 
 export async function loadPricingCatalog(value, configDir) {
-  if (!value || value === "bundled") return readJson(bundledCatalogPath);
-  return readJson(resolve(configDir, value));
+  const catalog = await readJson(
+    !value || value === "bundled" ? bundledCatalogPath : resolve(configDir, value),
+  );
+  if (catalog.currency !== "USD") {
+    throw new Error(`Unsupported pricing currency: ${catalog.currency ?? "missing"}. SkillProof currently supports USD only.`);
+  }
+  return catalog;
 }
 
 export function normalizeUsage(usage = {}, inputTokenSemantics = null) {
