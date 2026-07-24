@@ -1,0 +1,10 @@
+{
+  "name": "my skill test",
+  "models": [
+    "latest"
+  ],
+  "prompts": [
+    "Try the skill"
+  ],
+  "success": "Looks good"
+}

@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "currency": "USD",
+  "updated_at": "2026-07-24",
+  "disclaimer": "API-equivalent estimates only. Subscription plans and tool-call fees are not represented.",
+  "models": {
+    "openai/gpt-5.6-sol": {
+      "billing_route": "openai-api",
+      "input_token_semantics": "inclusive",
+      "input_per_million": 5,
+      "cached_input_per_million": 0.5,
+      "cache_write_per_million": 6.25,
+      "output_per_million": 30,
+      "long_context_threshold": 272000,
+      "long_context_input_multiplier": 2,
+      "long_context_output_multiplier": 1.5,
+      "source": "https://developers.openai.com/api/docs/models/compare"
+    },
+    "openai/gpt-5.6-terra": {
+      "billing_route": "openai-api",
+      "input_token_semantics": "inclusive",
+      "input_per_million": 2.5,
+      "cached_input_per_million": 0.25,
+      "cache_write_per_million": 3.125,
+      "output_per_million": 15,
+      "long_context_threshold": 272000,
+      "long_context_input_multiplier": 2,
+      "long_context_output_multiplier": 1.5,
+      "source": "https://developers.openai.com/api/docs/models/gpt-5.6-terra"
+    },
+    "openai/gpt-5.6-luna": {
+      "billing_route": "openai-api",
+      "input_token_semantics": "inclusive",
+      "input_per_million": 1,
+      "cached_input_per_million": 0.1,
+      "cache_write_per_million": 1.25,
+      "output_per_million": 6,
+      "long_context_threshold": 272000,
+      "long_context_input_multiplier": 2,
+      "long_context_output_multiplier": 1.5,
+      "source": "https://developers.openai.com/api/docs/models/compare"
+    },
+    "openai/gpt-5.4": {
+      "billing_route": "openai-api",
+      "input_token_semantics": "inclusive",
+      "input_per_million": 2.5,
+      "cached_input_per_million": 0.25,
+      "output_per_million": 15,
+      "long_context_threshold": 272000,
+      "long_context_input_multiplier": 2,
+      "long_context_output_multiplier": 1.5,
+      "source": "https://developers.openai.com/api/docs/models/gpt-5.4"
+    },
+    "openai/gpt-5.1": {
+      "billing_route": "openai-api",
+      "input_token_semantics": "inclusive",
+      "input_per_million": 1.25,
+      "cached_input_per_million": 0.125,
+      "output_per_million": 10,
+      "source": "https://developers.openai.com/api/docs/models/gpt-5.1"
+    },
+    "anthropic/claude-opus-4-8": {
+      "billing_route": "anthropic-api",
+      "input_token_semantics": "exclusive",
+      "input_per_million": 5,
+      "cached_input_per_million": 0.5,
+      "cache_write_per_million": 6.25,
+      "cache_write_1h_per_million": 10,
+      "output_per_million": 25,
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "anthropic/claude-sonnet-5": {
+      "billing_route": "anthropic-api",
+      "input_token_semantics": "exclusive",
+      "input_per_million": 2,
+      "cached_input_per_million": 0.2,
+      "cache_write_per_million": 2.5,
+      "cache_write_1h_per_million": 4,
+      "output_per_million": 10,
+      "valid_to_exclusive": "2026-09-01",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "anthropic/claude-sonnet-4-6": {
+      "billing_route": "anthropic-api",
+      "input_token_semantics": "exclusive",
+      "input_per_million": 3,
+      "cached_input_per_million": 0.3,
+      "cache_write_per_million": 3.75,
+      "cache_write_1h_per_million": 6,
+      "output_per_million": 15,
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    },
+    "anthropic/claude-haiku-4-5": {
+      "billing_route": "anthropic-api",
+      "input_token_semantics": "exclusive",
+      "input_per_million": 1,
+      "cached_input_per_million": 0.1,
+      "cache_write_per_million": 1.25,
+      "cache_write_1h_per_million": 2,
+      "output_per_million": 5,
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+    }
+  },
+  "scheduled_rates": {
+    "anthropic/claude-sonnet-5": [
+      {
+        "billing_route": "anthropic-api",
+        "valid_from": "2026-09-01",
+        "input_token_semantics": "exclusive",
+        "input_per_million": 3,
+        "cached_input_per_million": 0.3,
+        "cache_write_per_million": 3.75,
+        "cache_write_1h_per_million": 6,
+        "output_per_million": 15,
+        "source": "https://platform.claude.com/docs/en/about-claude/pricing"
+      }
+    ]
+  }
+}

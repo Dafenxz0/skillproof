@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "benchmark": {
+    "id": "synthetic-integration-demo",
+    "title": "SkillProof synthetic integration demo",
+    "mode": "development",
+    "description": "An executable test double demonstrating multiple models, activation, quality, tokens, costs, regressions, JSON, HTML, and badges.",
+    "limitations": [
+      "This is a synthetic CLI integration demonstration, not evidence that a real model or skill improved."
+    ]
+  },
+  "skill": {
+    "path": "../demo-skill"
+  },
+  "profile": "technical",
+  "conditions": [
+    "without_skill",
+    "skill_available_auto",
+    "skill_forced"
+  ],
+  "repeats": 3,
+  "seed": 20260724,
+  "concurrency": 2,
+  "runners": [
+    {
+      "id": "fixture-terra",
+      "adapter": "fixture",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "billing_route": "openai-api"
+    },
+    {
+      "id": "fixture-sonnet",
+      "adapter": "fixture",
+      "provider": "anthropic",
+      "model": "claude-sonnet-5",
+      "billing_route": "anthropic-api"
+    }
+  ],
+  "cases": [
+    {
+      "id": "safe-recovery",
+      "title": "Recover without duplicating work",
+      "applicability": "positive",
+      "prompt": "Repair an uncertain operation without repeating a completed write.",
+      "fixture": "./fixtures/positive",
+      "assertions": [
+        {
+          "id": "safe-result",
+          "command": "node",
+          "args": ["verify.mjs"],
+          "cwd": "{workspace}",
+          "points": 100,
+          "critical": true
+        }
+      ],
+      "fixture_outcomes": {
+        "fixture-terra": {
+          "without_skill": {
+            "files": { "answer.txt": "unsafe\n" },
+            "usage": { "input_tokens": 1000, "output_tokens": 200 },
+            "activation": { "skill_selected": false, "skill_resource_loaded": false }
+          },
+          "skill_available_auto": {
+            "files": { "answer.txt": "safe\n" },
+            "usage": { "input_tokens": 1150, "cached_input_tokens": 300, "output_tokens": 230 },
+            "activation": { "skill_selected": true, "skill_resource_loaded": true }
+          },
+          "skill_forced": {
+            "files": { "answer.txt": "safe\n" },
+            "usage": { "input_tokens": 1200, "cached_input_tokens": 300, "output_tokens": 240 },
+            "activation": { "skill_selected": true, "skill_resource_loaded": true }
+          }
+        },
+        "fixture-sonnet": {
+          "without_skill": {
+            "files": { "answer.txt": "unsafe\n" },
+            "usage": { "input_tokens": 900, "output_tokens": 210 },
+            "activation": { "skill_selected": false, "skill_resource_loaded": false }
+          },
+          "skill_available_auto": {
+            "files": { "answer.txt": "safe\n" },
+            "usage": { "input_tokens": 1080, "cached_input_tokens": 250, "output_tokens": 235 },
+            "activation": { "skill_selected": true, "skill_resource_loaded": true }
+          },
+          "skill_forced": {
+            "files": { "answer.txt": "safe\n" },
+            "usage": { "input_tokens": 1120, "cached_input_tokens": 250, "output_tokens": 245 },
+            "activation": { "skill_selected": true, "skill_resource_loaded": true }
+          }
+        }
+      },
+      "fixture_judgments": {
+        "without_skill": {
+          "score": 60,
+          "maximum": 100,
+          "rationale": "The uncertain outcome is not reconciled safely.",
+          "evidence": ["answer.txt"]
+        },
+        "skill_available_auto": {
+          "score": 92,
+          "maximum": 100,
+          "rationale": "The output preserves operation identity.",
+          "evidence": ["answer.txt", "safe-result"]
+        },
+        "skill_forced": {
+          "score": 92,
+          "maximum": 100,
+          "rationale": "The output preserves operation identity.",
+          "evidence": ["answer.txt", "safe-result"]
+        }
+      }
+    },
+    {
+      "id": "plain-formatting",
+      "title": "Leave an adjacent formatting task alone",
+      "applicability": "negative",
+      "prompt": "Keep this plain value unchanged.",
+      "fixture": "./fixtures/negative",
+      "assertions": [
+        {
+          "id": "scope-preserved",
+          "command": "node",
+          "args": ["verify.mjs"],
+          "cwd": "{workspace}",
+          "points": 100,
+          "critical": true
+        }
+      ],
+      "fixture_outcomes": {
+        "without_skill": {
+          "files": { "answer.txt": "plain\n" },
+          "usage": { "input_tokens": 600, "output_tokens": 100 },
+          "activation": { "skill_selected": false, "skill_resource_loaded": false }
+        },
+        "skill_available_auto": {
+          "files": { "answer.txt": "plain\n" },
+          "usage": { "input_tokens": 620, "output_tokens": 100 },
+          "activation": { "skill_selected": false, "skill_resource_loaded": false }
+        },
+        "skill_forced": {
+          "files": { "answer.txt": "plain\n" },
+          "usage": { "input_tokens": 700, "output_tokens": 110 },
+          "activation": { "skill_selected": true, "skill_resource_loaded": true }
+        }
+      },
+      "fixture_judgments": {
+        "without_skill": {
+          "score": 95,
+          "maximum": 100,
+          "rationale": "Scope is preserved.",
+          "evidence": ["answer.txt"]
+        },
+        "skill_available_auto": {
+          "score": 95,
+          "maximum": 100,
+          "rationale": "The skill stays inactive and scope is preserved.",
+          "evidence": ["answer.txt"]
+        },
+        "skill_forced": {
+          "score": 95,
+          "maximum": 100,
+          "rationale": "Forced availability does not expand the task.",
+          "evidence": ["answer.txt"]
+        }
+      }
+    }
+  ],
+  "judges": [
+    {
+      "id": "fixture-blind-reviewer",
+      "adapter": "fixture"
+    }
+  ],
+  "pricing": {
+    "catalog": "bundled"
+  },
+  "gates": {
+    "minimum_quality_delta": 1,
+    "regression_drop_points": 3,
+    "maximum_regressions": 0,
+    "maximum_false_activation_rate": 0,
+    "maximum_token_increase_percent": 25,
+    "maximum_latency_increase_percent": 1000
+  },
+  "statistics": {
+    "bootstrap_samples": 2000,
+    "confidence": 0.95,
+    "tie_margin_points": 1
+  },
+  "output": "../../.skillproof/demo"
+}

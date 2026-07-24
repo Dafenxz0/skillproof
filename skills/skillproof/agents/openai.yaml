@@ -1,0 +1,8 @@
+interface:
+  display_name: "SkillProof"
+  short_description: "Prove an Agent Skill works"
+  brand_color: "#D85A35"
+  default_prompt: "Use $skillproof to benchmark this skill against a clean baseline and generate verifiable evidence."
+
+policy:
+  allow_implicit_invocation: true
