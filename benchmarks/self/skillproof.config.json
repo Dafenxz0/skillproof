@@ -1,14 +1,14 @@
 {
   "version": 1,
   "benchmark": {
-    "id": "skillproof-self-development",
-    "title": "SkillProof self-development benchmark",
-    "description": "A real-agent development check of benchmark design, evidence interpretation, and adjacent-task restraint across two GPT-5.6 models and two reasoning settings.",
+    "id": "skillproof-self-test",
+    "title": "SkillProof real-agent self-test",
+    "description": "A real-agent test of benchmark design, evidence interpretation, and adjacent-task restraint across two GPT-5.6 models and two reasoning settings.",
     "mode": "development",
     "limitations": [
-      "This public development corpus has four cases and one repeat; it is an engineering check, not release evidence.",
+      "This public test corpus has four cases and one repeat; it is an engineering check, not release evidence.",
       "Codex does not currently expose trusted skill-load telemetry in this runner, so automatic activation metrics may be inconclusive.",
-      "This Windows-only development run opts into danger-full-access for trusted disposable fixtures because this Codex build degrades workspace-write to read-only; do not reuse that setting for hostile material.",
+      "This Windows-only test opts into danger-full-access for trusted disposable fixtures because this Codex build degrades workspace-write to read-only; do not reuse that setting for hostile material.",
       "The corpus is stored beside the skill and can be overfit."
     ]
   },

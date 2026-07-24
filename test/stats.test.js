@@ -235,6 +235,48 @@ test("release activation gates use Wilson lower bounds", () => {
   assert.equal(precisionGate.status, "passed");
 });
 
+test("unavailable activation telemetry does not block a development verdict", () => {
+  const runs = [
+    run({ caseId: "positive", applicability: "positive", condition: "without_skill", quality: 50 }),
+    run({
+      caseId: "positive",
+      applicability: "positive",
+      condition: "skill_available_auto",
+      quality: 60,
+      activationInstrumented: false
+    }),
+    run({
+      caseId: "positive",
+      applicability: "positive",
+      condition: "skill_forced",
+      quality: 60,
+      activationInstrumented: false
+    }),
+    run({ caseId: "negative", applicability: "negative", condition: "without_skill", quality: 90 }),
+    run({
+      caseId: "negative",
+      applicability: "negative",
+      condition: "skill_available_auto",
+      quality: 90,
+      activationInstrumented: false
+    }),
+    run({
+      caseId: "negative",
+      applicability: "negative",
+      condition: "skill_forced",
+      quality: 90,
+      activationInstrumented: false
+    })
+  ];
+  const summary = summarizeBenchmark(runs, config).runners.runner;
+  assert.equal(summary.verdict.status, "passed");
+  assert.equal(
+    summary.verdict.gates.some((gate) => gate.id === "false_activation_rate"),
+    false,
+  );
+  assert.equal(summary.activation.uninstrumented_runs, 2);
+});
+
 test("infrastructure errors make an otherwise passing runner inconclusive", () => {
   const runs = [
     run({ caseId: "positive", applicability: "positive", condition: "without_skill", quality: 50 }),

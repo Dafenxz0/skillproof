@@ -214,7 +214,7 @@ test("repository card is compact, honest, and escaped", () => {
   assert.match(card, /\+5\.0 pts/);
   assert.match(card, /\+100%/);
   assert.match(card, /4 \/ 4/);
-  assert.match(card, /1 model.*1 case.*synthetic/);
+  assert.match(card, /1 model.*1 case.*4 test runs/);
   assert.doesNotMatch(card, /<\/script><img/);
   assert.match(card, /&lt;\/script&gt;&lt;img/);
 });

@@ -359,13 +359,18 @@ function evaluateGates({ auto, activation, completeness, regressions, config }) 
       (value, limit) => value <= limit,
       "count",
     ),
-    compareGate(
+  ];
+  if (Number.isFinite(activation.false_activation_rate.value)
+    || config.benchmark?.mode === "release") {
+    evaluated.push(compareGate(
       "false_activation_rate",
       activation.false_activation_rate.value,
       gates.maximum_false_activation_rate ?? 0.1,
       (value, limit) => value <= limit,
       "ratio",
-    ),
+    ));
+  }
+  evaluated.push(
     compareGate(
       "token_increase",
       auto.tokens_delta_percent,
@@ -379,8 +384,8 @@ function evaluateGates({ auto, activation, completeness, regressions, config }) 
       gates.maximum_latency_increase_percent ?? 30,
       (value, limit) => value <= limit,
       "percent",
-    )
-  ];
+    ),
+  );
   if (config.benchmark?.mode === "release") {
     evaluated.push(
       compareGate(

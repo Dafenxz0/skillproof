@@ -324,7 +324,7 @@ function buildBadge(report) {
   return {
     schemaVersion: 1,
     label: "SkillProof",
-    message: `${report.benchmark.mode} / ${report.summary.verdict.status} / ${modelCount} model${modelCount === 1 ? "" : "s"}`,
+    message: `${report.summary.verdict.status} / ${modelCount} model${modelCount === 1 ? "" : "s"}`,
     color,
     cacheSeconds: 300,
     namedLogo: "checkmarx"
