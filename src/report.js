@@ -31,7 +31,6 @@ export function renderRepositoryCard(report) {
   const planned = report.summary.run_counts.planned;
   const modelCount = runners.length;
   const caseCount = report.cases.length;
-  const mode = String(report.benchmark.mode ?? "mode unknown").toLowerCase();
   const title = truncateCardText(report.benchmark.title, 58);
   const date = String(report.generated_at ?? "").slice(0, 10) || "date unknown";
   const description = `${verdict} benchmark; quality ${quality}; token overhead ${tokens}; ${completed} of ${planned} runs completed.`;
@@ -50,7 +49,7 @@ export function renderRepositoryCard(report) {
   ${cardMetric(228, "TOKEN OVERHEAD", tokens)}
   ${cardMetric(432, "COMPLETED RUNS", `${integer(completed)} / ${integer(planned)}`)}
   <line x1="24" y1="156" x2="616" y2="156" stroke="#2C3732"/>
-  <text x="24" y="179" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">${escapeHtml(`${modelCount} model${modelCount === 1 ? "" : "s"} · ${caseCount} case${caseCount === 1 ? "" : "s"} · ${mode} · ${date}`)}</text>
+  <text x="24" y="179" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">${escapeHtml(`${modelCount} model${modelCount === 1 ? "" : "s"} · ${caseCount} case${caseCount === 1 ? "" : "s"} · ${integer(planned)} test runs · ${date}`)}</text>
   <text x="616" y="179" fill="#87958E" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">generated from results.json</text>
 </svg>
 `;
@@ -60,7 +59,9 @@ export function renderHtml(report) {
   const summary = report.summary;
   const runnerSummaries = Object.values(summary.runners);
   const verdict = normalizeVerdict(summary.verdict.status);
-  const benchmarkMode = report.benchmark.mode ?? "Not recorded";
+  const benchmarkMode = report.benchmark.mode === "development"
+    ? "Engineering test"
+    : report.benchmark.mode === "release" ? "Release benchmark" : report.benchmark.mode ?? "Not recorded";
   const embedded = JSON.stringify(report).replaceAll("<", "\\u003c");
   const caseIndex = new Map(report.cases.map((testCase) => [testCase.id, testCase]));
   const runnerSections = runnerSummaries.map((runner) => renderRunner(runner, report, caseIndex)).join("");

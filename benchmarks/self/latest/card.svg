@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="196" viewBox="0 0 640 196" role="img" aria-labelledby="title description">
+  <title id="title">SkillProof evidence card: SkillProof real-agent self-test</title>
+  <desc id="description">passed benchmark; quality +40.0–+60.0 pts; token overhead +18.8–+66.6%; 24 of 24 runs completed.</desc>
+  <rect width="640" height="196" rx="14" fill="#101513"/>
+  <rect x="0.75" y="0.75" width="638.5" height="194.5" rx="13.25" fill="none" stroke="#344039" stroke-width="1.5"/>
+  <rect x="24" y="22" width="28" height="4" rx="2" fill="#78D69D"/>
+  <text x="62" y="29" fill="#AAB7B0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="700" letter-spacing="1.2">SKILLPROOF / EVIDENCE</text>
+  <rect x="490" y="14" width="126" height="26" rx="13" fill="#78D69D" fill-opacity="0.14" stroke="#78D69D" stroke-opacity="0.55"/>
+  <text x="553" y="31" fill="#78D69D" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="700" letter-spacing="0.6">PASSED</text>
+  <text x="24" y="68" fill="#F2F5F3" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="21" font-weight="700">SkillProof real-agent self-test</text>
+  <line x1="24" y1="86" x2="616" y2="86" stroke="#2C3732"/>
+  <text x="24" y="111" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="700" letter-spacing="0.8">QUALITY LIFT</text>
+  <text x="24" y="139" fill="#F2F5F3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">+40.0–+60.0 pts</text>
+  <text x="228" y="111" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="700" letter-spacing="0.8">TOKEN OVERHEAD</text>
+  <text x="228" y="139" fill="#F2F5F3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">+18.8–+66.6%</text>
+  <text x="432" y="111" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="700" letter-spacing="0.8">COMPLETED RUNS</text>
+  <text x="432" y="139" fill="#F2F5F3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">24 / 24</text>
+  <line x1="24" y1="156" x2="616" y2="156" stroke="#2C3732"/>
+  <text x="24" y="179" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">2 models · 4 cases · 24 test runs · 2026-07-24</text>
+  <text x="616" y="179" fill="#87958E" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">generated from results.json</text>
+</svg>
