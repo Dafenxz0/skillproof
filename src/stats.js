@@ -7,8 +7,10 @@ import {
   quantile,
   sum
 } from "./utils.js";
+import { resolveClaims } from "./config.js";
 
 export function summarizeBenchmark(runs, config) {
+  const requestedClaims = resolveClaims(config);
   const byRunner = Object.fromEntries(
     config.runners.map((runner) => [
       runner.id,
@@ -32,6 +34,7 @@ export function summarizeBenchmark(runs, config) {
           ? "At least one runner failed a configured quality, regression, activation, or efficiency gate."
           : "The benchmark lacks enough measured evidence for at least one configured gate."
     },
+    claims: aggregateClaims(Object.values(byRunner), requestedClaims),
     runners: byRunner,
     run_counts: {
       planned: config.runners.length
@@ -57,6 +60,7 @@ function summarizeRunner(runs, runner, config) {
   const activation = summarizeActivation(runs);
   const regressions = findRegressions(runs, config);
   const completeness = summarizeCompleteness(runs, config);
+  const requestedClaims = resolveClaims(config);
   const gates = evaluateGates({
     auto,
     activation,
@@ -78,6 +82,8 @@ function summarizeRunner(runs, runner, config) {
       forced_vs_without: forced
     },
     activation,
+    claims: summarizeClaims(gates, requestedClaims),
+    model_identity: summarizeModelIdentity(runs),
     completeness,
     regressions,
     verdict: {
@@ -334,6 +340,7 @@ function summarizeCompleteness(runs, config) {
 
 function evaluateGates({ auto, activation, completeness, regressions, config }) {
   const gates = config.gates ?? {};
+  const claims = resolveClaims(config);
   const evaluated = [
     {
       id: "run_completeness",
@@ -345,23 +352,35 @@ function evaluateGates({ auto, activation, completeness, regressions, config }) 
       observed_runs: completeness.observed_runs,
       infrastructure_errors: completeness.infrastructure_errors
     },
-    compareGate(
-      "quality_delta",
-      auto.quality_delta_points,
-      gates.minimum_quality_delta ?? 0,
-      (value, limit) => value >= limit,
-      "points",
-    ),
-    compareGate(
-      "paired_quality_regression_events",
-      regressions.count,
-      gates.maximum_regressions ?? 0,
-      (value, limit) => value <= limit,
-      "count",
-    ),
   ];
-  if (Number.isFinite(activation.false_activation_rate.value)
-    || config.benchmark?.mode === "release") {
+  if (claims.quality) {
+    evaluated.push(
+      compareGate(
+        "quality_delta",
+        auto.quality_delta_points,
+        gates.minimum_quality_delta ?? 0,
+        (value, limit) => value >= limit,
+        "points",
+      ),
+      compareGate(
+        "paired_quality_regression_events",
+        regressions.count,
+        gates.maximum_regressions ?? 0,
+        (value, limit) => value <= limit,
+        "count",
+      ),
+    );
+    if (config.benchmark?.mode === "release") {
+      evaluated.push(compareGate(
+        "quality_ci_lower",
+        auto.quality_confidence_interval.lower,
+        gates.minimum_quality_ci_lower,
+        (value, limit) => value >= limit,
+        "points",
+      ));
+    }
+  }
+  if (claims.activation) {
     evaluated.push(compareGate(
       "false_activation_rate",
       activation.false_activation_rate.value,
@@ -369,42 +388,105 @@ function evaluateGates({ auto, activation, completeness, regressions, config }) 
       (value, limit) => value <= limit,
       "ratio",
     ));
+    if (config.benchmark?.mode === "release") {
+      evaluated.push(
+        compareGate(
+          "activation_recall_ci_lower",
+          activation.recall.confidence_interval.lower,
+          gates.minimum_activation_recall,
+          (value, limit) => value >= limit,
+          "ratio",
+        ),
+        compareGate(
+          "activation_precision_ci_lower",
+          activation.precision.confidence_interval.lower,
+          gates.minimum_activation_precision,
+          (value, limit) => value >= limit,
+          "ratio",
+        ),
+      );
+    }
   }
-  evaluated.push(
-    compareGate(
-      "token_increase",
-      auto.tokens_delta_percent,
-      gates.maximum_token_increase_percent ?? 25,
-      (value, limit) => value <= limit,
-      "percent",
-    ),
-    compareGate(
-      "latency_increase",
-      auto.latency_delta_percent,
-      gates.maximum_latency_increase_percent ?? 30,
-      (value, limit) => value <= limit,
-      "percent",
-    ),
-  );
-  if (config.benchmark?.mode === "release") {
+  if (claims.efficiency) {
     evaluated.push(
       compareGate(
-        "activation_recall_ci_lower",
-        activation.recall.confidence_interval.lower,
-        gates.minimum_activation_recall,
-        (value, limit) => value >= limit,
-        "ratio",
+        "token_increase",
+        auto.tokens_delta_percent,
+        gates.maximum_token_increase_percent ?? 25,
+        (value, limit) => value <= limit,
+        "percent",
       ),
       compareGate(
-        "activation_precision_ci_lower",
-        activation.precision.confidence_interval.lower,
-        gates.minimum_activation_precision,
-        (value, limit) => value >= limit,
-        "ratio",
+        "latency_increase",
+        auto.latency_delta_percent,
+        gates.maximum_latency_increase_percent ?? 30,
+        (value, limit) => value <= limit,
+        "percent",
       ),
     );
   }
   return evaluated;
+}
+
+function summarizeClaims(gates, requested) {
+  const groups = {
+    quality: ["quality_delta", "quality_ci_lower", "paired_quality_regression_events"],
+    activation: [
+      "false_activation_rate",
+      "activation_recall_ci_lower",
+      "activation_precision_ci_lower"
+    ],
+    efficiency: ["token_increase", "latency_increase"]
+  };
+  return Object.fromEntries(Object.entries(groups).map(([name, ids]) => {
+    if (!requested[name]) {
+      return [name, {
+        requested: false,
+        status: name === "activation" ? "not_measured" : "not_claimed"
+      }];
+    }
+    const statuses = gates.filter((gate) => ids.includes(gate.id)).map((gate) => gate.status);
+    const status = statuses.includes("failed")
+      ? "failed"
+      : statuses.includes("inconclusive") || !statuses.length ? "inconclusive" : "verified";
+    return [name, { requested: true, status }];
+  }));
+}
+
+function aggregateClaims(runners, requested) {
+  return Object.fromEntries(["quality", "activation", "efficiency"].map((name) => {
+    if (!requested[name]) {
+      return [name, {
+        requested: false,
+        status: name === "activation" ? "not_measured" : "not_claimed"
+      }];
+    }
+    const statuses = runners.map((runner) => runner.claims[name].status);
+    const status = statuses.includes("failed")
+      ? "failed"
+      : statuses.includes("inconclusive") ? "inconclusive" : "verified";
+    return [name, { requested: true, status }];
+  }));
+}
+
+function summarizeModelIdentity(runs) {
+  const completed = runs.filter((run) => run.status !== "infrastructure_error");
+  const observedModels = [...new Set(completed.flatMap(
+    (run) => run.generation?.observed_models ?? [],
+  ))];
+  const matches = completed.map((run) => run.generation?.requested_model_observed);
+  const status = matches.includes(false)
+    ? "mismatch"
+    : matches.length && matches.every((value) => value === true)
+      ? "verified"
+      : matches.includes(true) ? "partially_verified" : "requested_only";
+  return {
+    status,
+    observed_models: observedModels,
+    verified_runs: matches.filter((value) => value === true).length,
+    measured_runs: matches.filter((value) => value !== null && value !== undefined).length,
+    total_runs: completed.length
+  };
 }
 
 function compareGate(id, value, threshold, test, unit) {

@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { executeCommand } from "./runner.js";
+import { buildSafeEnvironment, executeCommand } from "./runner.js";
 import { average, finiteNumber, id } from "./utils.js";
 
 export async function judgeRuns({ runs, judges, cases, outputDir, allowExec, profile }) {
@@ -68,13 +68,16 @@ async function executeJudge({ judge, run, testCase, outputDir, allowExec }) {
       (judge.args ?? []).map((value) => replace(value, replacements)),
       {
         cwd: judgeRoot,
-        env: {
-          ...process.env,
-          SKILLPROOF_ARTIFACT: run.artifact.path,
-          SKILLPROOF_CANDIDATE: run.artifact.blinded_label,
-          SKILLPROOF_CASE_FILE: caseFile,
-          SKILLPROOF_JUDGE_RESULT: resultFile
-        },
+        env: buildSafeEnvironment({
+          passthrough: judge.env_passthrough,
+          overrides: {
+            ...(judge.env ?? {}),
+            SKILLPROOF_ARTIFACT: run.artifact.path,
+            SKILLPROOF_CANDIDATE: run.artifact.blinded_label,
+            SKILLPROOF_CASE_FILE: caseFile,
+            SKILLPROOF_JUDGE_RESULT: resultFile
+          }
+        }),
         timeoutMs: judge.timeout_ms ?? 300000
       },
     );

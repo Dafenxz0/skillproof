@@ -7,13 +7,18 @@
     "mode": "development",
     "limitations": [
       "This public test corpus has four cases and one repeat; it is an engineering check, not release evidence.",
-      "Codex does not currently expose trusted skill-load telemetry in this runner, so automatic activation metrics may be inconclusive.",
+      "Codex does not currently expose trusted skill-load telemetry in this runner, so this benchmark does not claim activation.",
       "This Windows-only test opts into danger-full-access for trusted disposable fixtures because this Codex build degrades workspace-write to read-only; do not reuse that setting for hostile material.",
       "The corpus is stored beside the skill and can be overfit."
     ]
   },
   "skill": {
     "path": "../../skills/skillproof"
+  },
+  "claims": {
+    "quality": true,
+    "activation": false,
+    "efficiency": true
   },
   "profile": "technical",
   "conditions": [
@@ -220,6 +225,7 @@
   },
   "gates": {
     "minimum_quality_delta": 0,
+    "minimum_quality_ci_lower": 0,
     "regression_drop_points": 3,
     "maximum_regressions": 0,
     "minimum_activation_recall": 0.8,

@@ -2,6 +2,14 @@ import { dirname, resolve } from "node:path";
 import { readJson, invariant, CONDITIONS } from "./utils.js";
 import { resolveProfile } from "./profiles.js";
 
+export function resolveClaims(config) {
+  return {
+    quality: config.claims?.quality ?? true,
+    activation: config.claims?.activation ?? config.benchmark?.mode === "release",
+    efficiency: config.claims?.efficiency ?? true
+  };
+}
+
 export async function loadConfig(configPath) {
   const absolutePath = resolve(configPath);
   const config = await readJson(absolutePath);
@@ -25,6 +33,19 @@ export function validateConfig(config) {
   if (!["development", "release"].includes(config.benchmark?.mode)) {
     errors.push("benchmark.mode must be development or release");
   }
+  const claims = resolveClaims(config);
+  if (config.claims !== undefined
+    && (!config.claims || typeof config.claims !== "object" || Array.isArray(config.claims))) {
+    errors.push("claims must be an object");
+  }
+  for (const key of Object.keys(config.claims ?? {})) {
+    if (!["quality", "activation", "efficiency"].includes(key)) {
+      errors.push(`unknown claim: ${key}`);
+    } else if (typeof config.claims[key] !== "boolean") {
+      errors.push(`claims.${key} must be boolean`);
+    }
+  }
+  if (!Object.values(claims).some(Boolean)) errors.push("at least one claim must be enabled");
   const profile = resolveProfile(config.profile);
   if (!profile) errors.push("profile must be a built-in id or extend a built-in profile");
   if (!Array.isArray(config.runners) || !config.runners.length) errors.push("runners must contain at least one runner");
@@ -66,6 +87,7 @@ export function validateConfig(config) {
     if (runner.sandbox === "danger-full-access" && runner.allow_unsandboxed !== true) {
       errors.push(`runner ${runner.id ?? "?"} danger-full-access requires allow_unsandboxed=true`);
     }
+    validateEnvironmentOptions(runner, `runner ${runner.id ?? "?"}`, errors);
   }
   const caseIds = new Set();
   for (const testCase of config.cases ?? []) {
@@ -84,6 +106,11 @@ export function validateConfig(config) {
       if (!(Number(assertion.points) > 0)) {
         errors.push(`case ${testCase.id ?? "?"} assertion ${assertion.id ?? "?"} points must be positive`);
       }
+      validateEnvironmentOptions(
+        assertion,
+        `assertion ${testCase.id ?? "?"}/${assertion.id ?? "?"}`,
+        errors,
+      );
     }
   }
   const conditions = config.conditions ?? CONDITIONS;
@@ -105,6 +132,7 @@ export function validateConfig(config) {
       errors.push(`judge ${judge.id ?? "?"} adapter must be command or fixture`);
     }
     if (judge.adapter === "command" && !judge.command) errors.push(`judge ${judge.id} needs command`);
+    validateEnvironmentOptions(judge, `judge ${judge.id ?? "?"}`, errors);
   }
   if (config.benchmark?.mode === "release") {
     const positives = (config.cases ?? []).filter((item) => item.applicability === "positive").length;
@@ -116,10 +144,10 @@ export function validateConfig(config) {
     if ((config.runners ?? []).some((runner) => runner.adapter === "fixture")) {
       errors.push("release benchmarks cannot use fixture runners");
     }
-    if (profile?.require_judgment && (config.judges ?? []).length < 2) {
+    if (claims.quality && profile?.require_judgment && (config.judges ?? []).length < 2) {
       errors.push(`release profile ${profile.id} requires at least two independent judges`);
     }
-    if (profile?.require_deterministic) {
+    if (claims.quality && profile?.require_deterministic) {
       for (const testCase of config.cases ?? []) {
         if (!(testCase.assertions?.length > 0)) {
           errors.push(`release case ${testCase.id} needs deterministic assertions`);
@@ -134,8 +162,13 @@ export function validateConfig(config) {
         }
       }
     }
-    if (!Number.isFinite(config.gates?.minimum_activation_recall)
-      || !Number.isFinite(config.gates?.minimum_activation_precision)) {
+    if (claims.quality && !Number.isFinite(config.gates?.minimum_quality_ci_lower)) {
+      errors.push("release quality claims need a minimum_quality_ci_lower gate");
+    }
+    if (claims.activation && (
+      !Number.isFinite(config.gates?.minimum_activation_recall)
+      || !Number.isFinite(config.gates?.minimum_activation_precision)
+    )) {
       errors.push("release benchmarks need minimum_activation_recall and minimum_activation_precision gates");
     }
   }
@@ -164,6 +197,11 @@ export function createStarterConfig(skillPath) {
     skill: {
       path: skillPath.replaceAll("\\", "/")
     },
+    claims: {
+      quality: true,
+      activation: false,
+      efficiency: true
+    },
     profile: "technical",
     conditions: ["without_skill", "skill_available_auto", "skill_forced"],
     repeats: 3,
@@ -190,14 +228,13 @@ export function createStarterConfig(skillPath) {
         id: "positive-example",
         title: "A task that should use the skill",
         applicability: "positive",
-        prompt: "Replace this with a realistic request.",
+        prompt: "Create answer.txt containing exactly: skillproof-positive",
         fixture: "./fixtures/positive",
         assertions: [
           {
             id: "behavior",
-            command: "npm",
-            args: ["test"],
-            cwd: "{workspace}",
+            command: "node",
+            args: ["./assertions/positive.mjs"],
             points: 100,
             critical: true
           }
@@ -207,14 +244,13 @@ export function createStarterConfig(skillPath) {
         id: "hard-negative-example",
         title: "An adjacent task that should not use the skill",
         applicability: "negative",
-        prompt: "Replace this with an adjacent request that shares vocabulary.",
+        prompt: "Create answer.txt containing exactly: skillproof-negative",
         fixture: "./fixtures/negative",
         assertions: [
           {
             id: "scope",
-            command: "npm",
-            args: ["test"],
-            cwd: "{workspace}",
+            command: "node",
+            args: ["./assertions/negative.mjs"],
             points: 100,
             critical: true
           }
@@ -227,6 +263,7 @@ export function createStarterConfig(skillPath) {
     },
     gates: {
       minimum_quality_delta: 0,
+      minimum_quality_ci_lower: 0,
       maximum_regressions: 0,
       minimum_activation_recall: 0.8,
       minimum_activation_precision: 0.8,
@@ -241,4 +278,27 @@ export function createStarterConfig(skillPath) {
     },
     output: ".skillproof/results"
   };
+}
+
+function validateEnvironmentOptions(value, label, errors) {
+  if (value.env !== undefined
+    && (!value.env || typeof value.env !== "object" || Array.isArray(value.env))) {
+    errors.push(`${label} env must be an object`);
+  }
+  for (const [key, item] of Object.entries(value.env ?? {})) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || typeof item !== "string") {
+      errors.push(`${label} env must contain valid names with string values`);
+      break;
+    }
+  }
+  if (value.env_passthrough !== undefined && !Array.isArray(value.env_passthrough)) {
+    errors.push(`${label} env_passthrough must be an array`);
+    return;
+  }
+  for (const key of value.env_passthrough ?? []) {
+    if (typeof key !== "string" || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+      errors.push(`${label} env_passthrough must contain valid environment variable names`);
+      break;
+    }
+  }
 }

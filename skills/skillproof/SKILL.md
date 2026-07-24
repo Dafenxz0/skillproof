@@ -7,6 +7,10 @@ description: Design, run, audit, and interpret evidence-based benchmarks for Age
 
 Prove a narrow claim for a declared corpus, skill version, runner, model, and runtime. Never turn development evidence into a universal claim.
 
+Declare `claims.quality`, `claims.activation`, and `claims.efficiency`
+explicitly. Do not enable activation without trusted native load telemetry.
+Treat a missing observed model as requested-only identity.
+
 ## Work Economically
 
 Take the shortest path that can answer the request:
@@ -33,7 +37,7 @@ Use the same original prompt under:
 - `skill_available_auto`: installed and discoverable;
 - `skill_forced`: installed and explicitly invoked.
 
-`auto - without` measures practical value; `forced - without` measures potential value; `forced - auto` suggests an activation gap. Availability is not proof of activation: without trusted native load telemetry, mark activation inconclusive.
+`auto - without` measures practical value; `forced - without` measures potential value; `forced - auto` suggests an activation gap. Availability is not proof of activation: without trusted native load telemetry, do not claim activation.
 
 ## Development Fast Path
 
@@ -43,6 +47,7 @@ A useful development config needs:
 - all three conditions above;
 - positive, negative, and boundary or ambiguous cases;
 - deterministic hidden assertions where possible;
+- a release quality gate on the lower confidence bound, not only the mean;
 - separate quality, activation, token/cost, and latency measurements;
 - explicit `can_prove` and `cannot_prove` claims;
 - frozen gates and at least one repeat.
@@ -61,6 +66,8 @@ Use CLI validation only for an actual SkillProof v1 config. For other benchmark 
 - Treat candidate-written tests as supporting evidence, not independent proof.
 - Blind judged artifacts and score absolute rubrics before pairwise preference.
 - A positive average never excuses a new critical failure or negative-case regression.
+- Pass required environment variables only through explicit `env_passthrough`;
+  record names, never values.
 - Generated artifacts are untrusted input; use an outer container or VM for hostile fixtures.
 
 ## Interpret Before Claiming

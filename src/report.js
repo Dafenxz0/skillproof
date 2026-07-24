@@ -33,6 +33,10 @@ export function renderRepositoryCard(report) {
   const caseCount = report.cases.length;
   const title = truncateCardText(report.benchmark.title, 58);
   const date = String(report.generated_at ?? "").slice(0, 10) || "date unknown";
+  const activationClaim = report.summary.claims?.activation?.status;
+  const scope = activationClaim
+    ? `${modelCount} model${modelCount === 1 ? "" : "s"} · ${integer(planned)} test runs · activation ${humanize(activationClaim).toLowerCase()}`
+    : `${modelCount} model${modelCount === 1 ? "" : "s"} · ${caseCount} case${caseCount === 1 ? "" : "s"} · ${integer(planned)} test runs · ${date}`;
   const description = `${verdict} benchmark; quality ${quality}; token overhead ${tokens}; ${completed} of ${planned} runs completed.`;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="196" viewBox="0 0 640 196" role="img" aria-labelledby="title description">
   <title id="title">SkillProof evidence card: ${escapeHtml(title)}</title>
@@ -49,7 +53,7 @@ export function renderRepositoryCard(report) {
   ${cardMetric(228, "TOKEN OVERHEAD", tokens)}
   ${cardMetric(432, "COMPLETED RUNS", `${integer(completed)} / ${integer(planned)}`)}
   <line x1="24" y1="156" x2="616" y2="156" stroke="#2C3732"/>
-  <text x="24" y="179" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">${escapeHtml(`${modelCount} model${modelCount === 1 ? "" : "s"} · ${caseCount} case${caseCount === 1 ? "" : "s"} · ${integer(planned)} test runs · ${date}`)}</text>
+  <text x="24" y="179" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">${escapeHtml(scope)}</text>
   <text x="616" y="179" fill="#87958E" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">generated from results.json</text>
 </svg>
 `;
@@ -118,6 +122,7 @@ export function renderHtml(report) {
       </div>
     </section>
     ${summary.verdict.explanation ? `<p class="verdict-explanation">${escapeHtml(summary.verdict.explanation)}</p>` : ""}
+    ${renderClaims(summary.claims)}
 
     ${warnings.length ? `<section class="notice" aria-labelledby="warnings-title">
       <h2 id="warnings-title">Read before interpreting</h2>
@@ -133,7 +138,7 @@ export function renderHtml(report) {
         <table>
           <caption>Automatic skill availability compared with a clean baseline, separated by runner and model.</caption>
           <thead>
-            <tr><th scope="col">Runner / model</th><th scope="col">Quality</th><th scope="col">Quality CI</th><th scope="col">Tokens</th><th scope="col">Cost</th><th scope="col">Latency</th><th scope="col">Regression events</th><th scope="col">Gate</th></tr>
+            <tr><th scope="col">Runner / model</th><th scope="col">Model identity</th><th scope="col">Quality</th><th scope="col">Quality CI</th><th scope="col">Tokens</th><th scope="col">Cost</th><th scope="col">Latency</th><th scope="col">Regression events</th><th scope="col">Gate</th></tr>
           </thead>
           <tbody>
             ${runnerSummaries.map(renderLedgerRow).join("")}
@@ -183,6 +188,7 @@ export function renderHtml(report) {
         ${definition("Price snapshot", `${report.pricing.updated_at} · ${shortHash(report.provenance.pricing_sha256)}`)}
         ${definition("Node", report.provenance.node)}
         ${definition("Platform", `${report.provenance.platform} ${report.provenance.arch}`)}
+        ${definition("Environment policy", environmentPolicySummary(report.provenance.environment_allowlist))}
         ${definition("Repository commit", report.provenance.git.commit ?? "Not recorded")}
         ${definition("Repository state", report.provenance.git.dirty === null ? "Not recorded" : report.provenance.git.dirty ? "Dirty" : "Clean")}
       </dl>
@@ -219,8 +225,10 @@ export function renderHtml(report) {
 function renderLedgerRow(runner) {
   const contrast = runner.contrasts.auto_vs_without;
   const ci = contrast.quality_confidence_interval;
+  const identity = runner.model_identity?.status ?? "requested_only";
   return `<tr>
     <th scope="row"><a href="#runner-${safeId(runner.runner_id)}">${escapeHtml(runner.runner_id)}</a><small>${escapeHtml(runner.provider)}/${escapeHtml(runner.model)}</small></th>
+    <td>${escapeHtml(humanize(identity))}</td>
     <td>${metric(contrast.quality_delta_points, " pts", true)}</td>
     <td>${confidenceInterval(ci)}</td>
     <td>${metricPair(contrast.tokens_delta, (value) => `${signed(value)} tokens`, contrast.tokens_delta_percent, false)}</td>
@@ -229,6 +237,26 @@ function renderLedgerRow(runner) {
     <td>${integer(runner.regressions.count)}</td>
     <td>${statusBadge(runner.verdict.status)}</td>
   </tr>`;
+}
+
+function renderClaims(claims) {
+  if (!claims) return "";
+  return `<section class="claim-strip" aria-label="Certified claims">
+    ${Object.entries(claims).map(([name, claim]) => `<div>
+      <span>${escapeHtml(humanize(name))}</span>
+      <strong class="claim-${safeId(claim.status)}">${escapeHtml(humanize(claim.status))}</strong>
+    </div>`).join("")}
+  </section>`;
+}
+
+function environmentPolicySummary(policy) {
+  if (!policy) return "Not recorded";
+  const explicit = [...new Set([
+    ...Object.values(policy.runners ?? {}).flat(),
+    ...Object.values(policy.assertions ?? {}).flat(),
+    ...Object.values(policy.judges ?? {}).flat()
+  ])].sort();
+  return `${policy.defaults?.length ?? 0} safe defaults · explicit: ${explicit.join(", ") || "none"}`;
 }
 
 function renderRunner(runner, report, caseIndex) {
@@ -489,6 +517,7 @@ h1{max-width:22ch;overflow-wrap:anywhere;margin:0;font-size:clamp(36px,5vw,60px)
 h2{margin:0;font-size:clamp(26px,3vw,42px);line-height:1;letter-spacing:-.035em}
 h3{margin:0;font-size:28px;letter-spacing:-.025em}h4{margin:0 0 16px;font-size:17px}h5{margin:24px 0 10px;font-size:15px}h6{margin:0;font-size:13px}
 .lede{max-width:65ch;margin:20px 0 0;color:var(--muted);font-size:17px}.verdict-explanation{max-width:80ch;margin:18px 0 0;color:var(--muted)}
+.claim-strip{display:flex;flex-wrap:wrap;gap:1px;margin:22px 0;background:var(--rule);border:1px solid var(--rule);border-radius:12px;overflow:hidden}.claim-strip div{display:flex;gap:18px;justify-content:space-between;min-width:190px;flex:1;padding:14px 16px;background:var(--surface)}.claim-strip span{color:var(--muted)}.claim-strip strong{font-size:13px;text-transform:uppercase;letter-spacing:.06em}.claim-verified{color:var(--good)}.claim-failed{color:var(--bad)}.claim-inconclusive,.claim-not-measured,.claim-not-claimed{color:var(--warn)}
 .stamp{width:230px;padding:16px;border:1px solid currentColor;border-left-width:5px}.stamp span,.stamp small{display:block;color:var(--muted);font:12px var(--code)}.stamp strong{display:block;margin:7px 0;font:800 24px var(--code)}
 .stamp-passed{color:var(--good)}.stamp-failed{color:var(--bad)}.stamp-inconclusive{color:var(--warn)}
 .notice{display:grid;grid-template-columns:220px 1fr;gap:32px;margin:24px 0 0;padding:18px;border-left:5px solid var(--warn);background:color-mix(in srgb,var(--warn) 7%,var(--surface))}.notice h2{font-size:17px}.notice ul{margin:0;padding-left:20px}

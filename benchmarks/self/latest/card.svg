@@ -16,6 +16,6 @@
   <text x="432" y="111" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" font-weight="700" letter-spacing="0.8">COMPLETED RUNS</text>
   <text x="432" y="139" fill="#F2F5F3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">24 / 24</text>
   <line x1="24" y1="156" x2="616" y2="156" stroke="#2C3732"/>
-  <text x="24" y="179" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">2 models · 4 cases · 24 test runs · 2026-07-24</text>
+  <text x="24" y="179" fill="#87958E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">2 models · 24 test runs · activation not measured</text>
   <text x="616" y="179" fill="#87958E" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">generated from results.json</text>
 </svg>

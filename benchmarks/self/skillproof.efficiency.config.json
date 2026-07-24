@@ -8,11 +8,16 @@
     "limitations": [
       "This is a one-case, one-model, one-repeat canary, not quality or release evidence.",
       "It exists to catch large context and tool-call regressions before running the broader self benchmark.",
-      "Codex skill-load telemetry is unavailable, so activation remains inconclusive."
+      "Codex skill-load telemetry is unavailable, so this benchmark does not claim activation."
     ]
   },
   "skill": {
     "path": "../../skills/skillproof"
+  },
+  "claims": {
+    "quality": true,
+    "activation": false,
+    "efficiency": true
   },
   "profile": "technical",
   "conditions": [
@@ -93,6 +98,7 @@
   },
   "gates": {
     "minimum_quality_delta": 0,
+    "minimum_quality_ci_lower": 0,
     "regression_drop_points": 3,
     "maximum_regressions": 0,
     "minimum_activation_recall": 0.8,

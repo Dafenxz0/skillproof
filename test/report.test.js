@@ -234,6 +234,28 @@ test("report labels the gate honestly and exposes confidence, absolute deltas, c
   assert.match(html, /1 of 1 instrumented automatic runs\. 1 automatic run was not instrumented\./);
 });
 
+test("report separates verified claims from unmeasured activation and requested model identity", () => {
+  const report = makeReport();
+  report.summary.claims = {
+    quality: { requested: true, status: "verified" },
+    activation: { requested: false, status: "not_measured" },
+    efficiency: { requested: true, status: "verified" }
+  };
+  report.summary.runners["model-a"].model_identity = {
+    status: "requested_only",
+    observed_models: [],
+    verified_runs: 0,
+    measured_runs: 0,
+    total_runs: 4
+  };
+  const html = renderHtml(report);
+  const card = renderRepositoryCard(report);
+  assert.match(html, /Quality[\s\S]*verified/i);
+  assert.match(html, /Activation[\s\S]*not measured/i);
+  assert.match(html, /requested only/i);
+  assert.match(card, /activation not measured/);
+});
+
 test("report shows regression, generation, assertion, and judge evidence", () => {
   const report = makeReport();
   const runner = report.summary.runners["model-a"];

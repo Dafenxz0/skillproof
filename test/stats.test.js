@@ -235,6 +235,73 @@ test("release activation gates use Wilson lower bounds", () => {
   assert.equal(precisionGate.status, "passed");
 });
 
+test("release value claims can pass without claiming unavailable activation telemetry", () => {
+  const cases = [
+    { id: "positive-a", applicability: "positive" },
+    { id: "positive-b", applicability: "positive" },
+    { id: "negative", applicability: "negative" }
+  ];
+  const runs = cases.flatMap(({ id: caseId, applicability }) => config.conditions.map(
+    (condition) => run({
+      caseId,
+      applicability,
+      condition,
+      quality: condition === "without_skill" ? 50 : applicability === "positive" ? 60 : 90,
+      activationInstrumented: false
+    }),
+  ));
+  const summary = summarizeBenchmark(runs, {
+    ...config,
+    benchmark: { mode: "release" },
+    claims: { quality: true, activation: false, efficiency: true },
+    cases,
+    gates: {
+      ...config.gates,
+      minimum_quality_ci_lower: 0
+    }
+  }).runners.runner;
+  assert.equal(summary.verdict.status, "passed");
+  assert.equal(summary.claims.quality.status, "verified");
+  assert.equal(summary.claims.activation.status, "not_measured");
+  assert.equal(
+    summary.verdict.gates.some((gate) => gate.id.startsWith("activation_")),
+    false,
+  );
+});
+
+test("release quality claims fail when the confidence interval includes a material loss", () => {
+  const cases = [
+    { id: "positive-win", applicability: "positive" },
+    { id: "positive-loss", applicability: "positive" }
+  ];
+  const runs = cases.flatMap(({ id: caseId, applicability }, index) => [
+    run({ caseId, applicability, condition: "without_skill", quality: 50 }),
+    run({
+      caseId,
+      applicability,
+      condition: "skill_available_auto",
+      quality: index === 0 ? 70 : 40
+    }),
+    run({ caseId, applicability, condition: "skill_forced", quality: 60 })
+  ]);
+  const summary = summarizeBenchmark(runs, {
+    ...config,
+    benchmark: { mode: "release" },
+    claims: { quality: true, activation: false, efficiency: false },
+    cases,
+    gates: {
+      ...config.gates,
+      minimum_quality_delta: 0,
+      minimum_quality_ci_lower: 0
+    }
+  }).runners.runner;
+  const meanGate = summary.verdict.gates.find((gate) => gate.id === "quality_delta");
+  const confidenceGate = summary.verdict.gates.find((gate) => gate.id === "quality_ci_lower");
+  assert.equal(meanGate.status, "passed");
+  assert.equal(confidenceGate.status, "failed");
+  assert.equal(summary.verdict.status, "failed");
+});
+
 test("unavailable activation telemetry does not block a development verdict", () => {
   const runs = [
     run({ caseId: "positive", applicability: "positive", condition: "without_skill", quality: 50 }),

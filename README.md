@@ -55,6 +55,26 @@ assertion, limitation, and model-specific result.
 
 Every model is reported separately. SkillProof does not hide a regression on one model inside an average from another.
 
+## Declare what the benchmark proves
+
+Claims are explicit. A release can verify skill value without pretending it
+measured automatic activation:
+
+```json
+{
+  "claims": {
+    "quality": true,
+    "activation": false,
+    "efficiency": true
+  }
+}
+```
+
+Only enabled claims create gates. Disabled activation is shown as **not
+measured**, never as verified. If activation is enabled for a release, trusted
+native load telemetry and its recall/precision gates remain mandatory. Release
+quality also gates the lower confidence bound, not only the average lift.
+
 ## Quick start
 
 Requires Node.js 20 or newer.
@@ -80,6 +100,9 @@ Edit the generated `skillproof.config.json`, then validate it:
 ```bash
 npx github:Dafenxz0/skillproof validate --config skillproof.config.json
 ```
+
+`init` also creates runnable `fixtures/` and out-of-workspace `assertions/`
+starters, so the first benchmark does not begin with missing paths.
 
 SkillProof will not execute configured agents, assertions, or judges until you explicitly allow it:
 
@@ -181,6 +204,9 @@ SkillProof records both the requested model and the model identities observed in
 provider telemetry. Moving aliases should not be used for release claims unless
 the observed identity is also recorded.
 
+When a provider emits no runtime model identity, the report labels the runner
+**requested only** instead of presenting the configured name as verified.
+
 `inherit_auth` is deliberately explicit. Set it to `true` only when you want an
 isolated Codex home to receive a copy of your existing CLI authentication. It is
 `false` in generated starter files so a benchmark cannot inherit credentials by
@@ -215,7 +241,7 @@ SkillProof builds the protocol around several non-negotiable rules:
 4. Failed generations remain in the record.
 5. Hidden assertions run unchanged against all artifacts.
 6. Judge inputs use random candidate labels.
-7. Activation comes from runtime telemetry, not output wording.
+7. Claimed activation comes from runtime telemetry, not output wording.
 8. Missing tokens or prices remain unknown, never zero.
 9. Prices come from a pinned, hashed snapshot.
 10. Thresholds are frozen before the release run.
@@ -230,6 +256,9 @@ SkillProof keeps three money concepts separate:
 - API-equivalent estimate from the pinned catalog;
 - subscription or quota billing, which is normally unavailable per run.
 
+Pricing catalogs are currently **USD only**. Non-USD catalogs are rejected
+instead of being displayed with misleading `$` and `cost_usd` labels.
+
 It never presents an API estimate as a Codex, ChatGPT, Claude, Cursor, Bedrock, or Vertex invoice.
 
 Run:
@@ -238,14 +267,15 @@ Run:
 node bin/skillproof.js prices
 ```
 
-to inspect the bundled snapshot. Supply your own exact catalog with `--price-catalog` when a model, region, billing route, tool fee, or currency differs.
+to inspect the bundled snapshot. Supply your own exact USD catalog with
+`--price-catalog` when a model, region, billing route, tool fee, or rate differs.
 
 ## One run, four artifacts
 
 `results.json` is the evidence record:
 
 - raw run outcomes;
-- exact runner and model identity;
+- requested runner identity and provider-observed model identity when available;
 - assertion and judge scores;
 - activation telemetry;
 - tokens, cost, and latency;
@@ -281,17 +311,19 @@ skillproof init [skill-path]
 skillproof validate [config]
 skillproof test [skill-path] --config file --allow-exec
 skillproof report results.json
-skillproof doctor
+skillproof doctor --config file
 skillproof prices
 ```
 
-Use `skillproof doctor` before an expensive run. It checks whether supported local agent commands are actually usable.
+Use `skillproof doctor --config skillproof.config.json` before an expensive
+run. It checks commands, fixtures, sandbox/auth choices, telemetry availability,
+generation count, and declared budget without spending a model call.
 
 ## Security
 
 Generated code and third-party skills are untrusted.
 
-SkillProof uses process argument arrays and disposable workspace copies. It does not use `shell: true`, and command execution requires `--allow-exec`. That is isolation, not a security sandbox. Use an unprivileged container or virtual machine for hostile fixtures, fail closed when a provider sandbox is unavailable, and never expose repository-wide secrets to candidate commands.
+SkillProof uses process argument arrays and disposable workspace copies. It does not use `shell: true`, and command execution requires `--allow-exec`. Child processes receive a small OS environment allowlist; credentials require explicit `env_passthrough`, whose names—not values—are recorded. Claude receives an isolated home/config directory. That is isolation, not a security sandbox. Use an unprivileged container or virtual machine for hostile fixtures and fail closed when a provider sandbox is unavailable.
 
 ## What SkillProof will not claim
 

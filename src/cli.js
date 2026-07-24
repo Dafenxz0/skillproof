@@ -1,11 +1,24 @@
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createStarterConfig, loadConfig, resolveConfigPaths, validateConfig } from "./config.js";
+import {
+  createStarterConfig,
+  loadConfig,
+  resolveClaims,
+  resolveConfigPaths,
+  validateConfig
+} from "./config.js";
 import { judgeRuns } from "./judge.js";
 import { loadPricingCatalog } from "./pricing.js";
 import { writeHtmlReport, writeRepositoryCard } from "./report.js";
-import { executeCommand, executeRun, hashTree } from "./runner.js";
+import {
+  buildSafeEnvironment,
+  executeCommand,
+  executeRun,
+  hashTree,
+  SAFE_ENV_KEYS
+} from "./runner.js";
 import { summarizeBenchmark } from "./stats.js";
 import {
   CONDITIONS,
@@ -29,8 +42,12 @@ export async function main(argv) {
   if (command === "init") return initCommand(positionals, options);
   if (command === "validate") return validateCommand(positionals, options);
   if (command === "test") return testCommand(positionals, options);
+  if (command === "demo") return testCommand(positionals, {
+    ...options,
+    config: options.config ?? "skillproof.config.json"
+  });
   if (command === "report") return reportCommand(positionals, options);
-  if (command === "doctor") return doctorCommand();
+  if (command === "doctor") return doctorCommand(options);
   if (command === "prices") return pricesCommand(options);
   throw new Error(`Unknown command: ${command}. Run skillproof help.`);
 }
@@ -42,8 +59,10 @@ async function initCommand(positionals, options) {
     throw new Error(`${destination} already exists. Use --force to replace it.`);
   }
   await writeJson(destination, createStarterConfig(skillPath));
+  await writeStarterFixtures(dirname(destination));
   console.log(`Created ${destination}`);
-  console.log("Edit the positive and hard-negative cases before running a benchmark.");
+  console.log("Created runnable positive/negative fixtures and hidden assertions.");
+  console.log("Edit the starter cases, then run skillproof demo --allow-exec.");
 }
 
 async function validateCommand(positionals, options) {
@@ -148,6 +167,7 @@ async function testCommand(positionals, options) {
       arch: process.arch,
       node: process.version,
       runner_versions: await runnerVersionProvenance(loaded.config.runners),
+      environment_allowlist: environmentAllowlist(loaded.config),
       git: await gitProvenance(loaded.configDir)
     },
     summary,
@@ -195,27 +215,101 @@ async function reportCommand(positionals, options) {
   console.log(`Card: ${cardDestination}`);
 }
 
-async function doctorCommand() {
+async function doctorCommand(options) {
   console.log(`Node ${process.version} · ${process.platform}/${process.arch}`);
-  for (const command of ["codex", "claude"]) {
-    try {
-      const result = await executeCommand(command, ["--version"], {
-        cwd: process.cwd(),
-        env: process.env,
-        timeoutMs: 10000
-      });
-      const detail = (result.stdout || result.stderr).trim().split(/\r?\n/)[0];
-      console.log(`${command}: ${result.exitCode === 0 ? detail : `unavailable (${detail || `exit ${result.exitCode}`})`}`);
-    } catch (error) {
-      console.log(`${command}: unavailable (${error.message})`);
-    }
+  if (!options.config) {
+    for (const command of ["codex", "claude"]) await inspectCommand(command);
+    console.log("Use skillproof doctor --config <file> for a benchmark-specific preflight.");
+    console.log("Process isolation is not a security sandbox. Use a container or VM for hostile fixtures.");
+    return;
   }
+  const loaded = await loadConfig(resolve(options.config));
+  const paths = resolveConfigPaths(loaded);
+  const plan = buildPlan(loaded.config);
+  console.log(`Config: ${loaded.configPath}`);
+  console.log(`Plan: ${plan.length} generations · ${loaded.config.runners.length} runner(s) · ${loaded.config.cases.length} case(s)`);
+  console.log(`Skill: ${await pathExists(join(paths.skillPath, "SKILL.md")) ? "available" : "missing"} (${paths.skillPath})`);
+  for (const runner of loaded.config.runners) {
+    await inspectCommand(runner.command, runner.env_passthrough, runner.env);
+    const activation = runner.adapter === "fixture"
+      ? "fixture telemetry"
+      : ["codex", "claude"].includes(runner.preset)
+        ? "not exposed by built-in preset"
+        : "adapter-defined";
+    const auth = await describeRunnerAuthentication(runner);
+    console.log(`${runner.id}: model ${runner.model} (access not probed) · sandbox ${runner.sandbox ?? "workspace-write"} · auth ${auth} · activation ${activation}`);
+  }
+  for (const testCase of loaded.config.cases) {
+    const fixture = resolve(loaded.configDir, testCase.fixture);
+    console.log(`fixture ${testCase.id}: ${await pathExists(fixture) ? "available" : "missing"} (${fixture})`);
+  }
+  const assertions = loaded.config.cases.flatMap((testCase) => testCase.assertions ?? []);
+  console.log(`Assertions: ${assertions.length} configured · Judges: ${(loaded.config.judges ?? []).length} configured`);
+  const supportingCommands = new Map([
+    ...assertions.map((assertion) => [
+      `assertion ${assertion.id}`,
+      [assertion.command, assertion.env_passthrough, assertion.env]
+    ]),
+    ...(loaded.config.judges ?? []).filter((judge) => judge.adapter === "command").map((judge) => [
+      `judge ${judge.id}`,
+      [judge.command, judge.env_passthrough, judge.env]
+    ])
+  ]);
+  for (const [label, [command, passthrough, overrides]] of supportingCommands) {
+    process.stdout.write(`${label} · `);
+    await inspectCommand(command, passthrough, overrides);
+  }
+  const declaredBudget = loaded.config.runners.every((runner) => Number.isFinite(runner.max_budget_usd))
+    ? loaded.config.runners.reduce(
+      (total, runner) => total + runner.max_budget_usd
+        * loaded.config.cases.length
+        * loaded.config.repeats
+        * (loaded.config.conditions?.length ?? CONDITIONS.length),
+      0,
+    )
+    : null;
+  console.log(`Maximum declared generation budget: ${declaredBudget === null ? "not fully declared" : `$${declaredBudget.toFixed(2)} USD`}`);
   console.log("Process isolation is not a security sandbox. Use a container or VM for hostile fixtures.");
+}
+
+async function inspectCommand(command, passthrough = [], overrides = {}) {
+  if (!command) return;
+  try {
+    const result = await executeCommand(command, ["--version"], {
+      cwd: process.cwd(),
+      env: buildSafeEnvironment({ passthrough, overrides }),
+      timeoutMs: 10000
+    });
+    const detail = (result.stdout || result.stderr).trim().split(/\r?\n/)[0];
+    console.log(`${command}: ${result.exitCode === 0 ? detail : `unavailable (${detail || `exit ${result.exitCode}`})`}`);
+  } catch (error) {
+    console.log(`${command}: unavailable (${error.message})`);
+  }
+}
+
+async function describeRunnerAuthentication(runner) {
+  if (runner.inherit_auth) {
+    const source = runner.preset === "codex"
+      ? join(process.env.CODEX_HOME || join(homedir(), ".codex"), "auth.json")
+      : runner.preset === "claude"
+        ? join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"), ".credentials.json")
+        : null;
+    return source && await pathExists(source)
+      ? "isolated credential source available"
+      : "isolated credential source missing";
+  }
+  if (runner.env_passthrough?.length) {
+    const missing = runner.env_passthrough.filter((name) => process.env[name] === undefined);
+    return missing.length
+      ? `explicit variables missing: ${missing.join(", ")}`
+      : `explicit variables available: ${runner.env_passthrough.join(", ")}`;
+  }
+  return "no credential passthrough";
 }
 
 async function pricesCommand(options) {
   const catalog = await loadPricingCatalog(options["price-catalog"] ?? "bundled", process.cwd());
-  console.log(`Price catalog ${catalog.updated_at} · ${catalog.currency}`);
+  console.log(`Price catalog ${catalog.updated_at} · USD only`);
   for (const [model, rate] of Object.entries(catalog.models)) {
     console.log(`${model.padEnd(30)} input $${rate.input_per_million}/M · cached $${rate.cached_input_per_million ?? "n/a"}/M · output $${rate.output_per_million}/M`);
   }
@@ -273,7 +367,10 @@ function sanitizeRunners(runners) {
     command: runner.command ? basename(runner.command) : null,
     custom_arguments_count: runner.args?.length ?? 0,
     custom_arguments_sha256: runner.args?.length ? sha256(runner.args) : null,
-    environment_variable_names: Object.keys(runner.env ?? {}).sort()
+    environment_variable_names: [...new Set([
+      ...Object.keys(runner.env ?? {}),
+      ...(runner.env_passthrough ?? [])
+    ])].sort()
   }));
 }
 
@@ -295,6 +392,7 @@ function sanitizeCase(testCase) {
 
 function buildLimitations(config, runs) {
   const limitations = [...(config.benchmark.limitations ?? [])];
+  const claims = resolveClaims(config);
   const positives = config.cases.filter((testCase) => testCase.applicability === "positive").length;
   const negatives = config.cases.filter((testCase) => testCase.applicability === "negative").length;
   if (config.repeats < 3) limitations.push("Fewer than three repeats were run per condition, so stochastic variance is weakly estimated.");
@@ -306,7 +404,13 @@ function buildLimitations(config, runs) {
     limitations.push("Fixture runners are synthetic test doubles and cannot support claims about a real agent or model.");
   }
   if (runs.some((run) => !run.activation.instrumented && run.condition === "skill_available_auto")) {
-    limitations.push("Automatic activation was not instrumented for every run, so activation precision and recall may be inconclusive.");
+    limitations.push(claims.activation
+      ? "Automatic activation was not instrumented for every run, so the activation claim may be inconclusive."
+      : "Activation was not claimed because trusted automatic skill-load telemetry was unavailable.");
+  }
+  if (runs.some((run) => run.status !== "infrastructure_error"
+    && !(run.generation?.observed_models?.length))) {
+    limitations.push("At least one runner reported only the requested model; runtime model identity was unavailable.");
   }
   if (runs.some((run) => run.costs.observed_usd === null && run.costs.estimated_api_equivalent_usd !== null)) {
     limitations.push("API-equivalent costs are estimates from a pinned catalog, not subscription charges or provider invoices.");
@@ -341,7 +445,10 @@ async function runnerVersionProvenance(runners) {
     try {
       const result = await executeCommand(runner.command, ["--version"], {
         cwd: process.cwd(),
-        env: process.env,
+        env: buildSafeEnvironment({
+          passthrough: runner.env_passthrough,
+          overrides: runner.env
+        }),
         timeoutMs: 10000
       });
       versions[runner.id] = result.exitCode === 0
@@ -352,6 +459,56 @@ async function runnerVersionProvenance(runners) {
     }
   }
   return versions;
+}
+
+async function writeStarterFixtures(configDir) {
+  const fixtures = {
+    positive: "Starter fixture for a task that should use the skill.\n",
+    negative: "Starter fixture for an adjacent task that should not use the skill.\n"
+  };
+  for (const [name, content] of Object.entries(fixtures)) {
+    const directory = join(configDir, "fixtures", name);
+    await mkdir(directory, { recursive: true });
+    await writeFile(join(directory, "task.txt"), content, "utf8");
+  }
+  const assertions = {
+    "positive.mjs": "skillproof-positive",
+    "negative.mjs": "skillproof-negative"
+  };
+  const assertionDir = join(configDir, "assertions");
+  await mkdir(assertionDir, { recursive: true });
+  for (const [name, expected] of Object.entries(assertions)) {
+    await writeFile(join(assertionDir, name), `import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
+const value = await readFile(join(process.env.SKILLPROOF_WORKSPACE, "answer.txt"), "utf8");
+assert.equal(value.trim(), ${JSON.stringify(expected)});
+`, "utf8");
+  }
+}
+
+function environmentAllowlist(config) {
+  return {
+    defaults: SAFE_ENV_KEYS,
+    runners: Object.fromEntries(config.runners.map((runner) => [
+      runner.id,
+      [...new Set([...(runner.env_passthrough ?? []), ...Object.keys(runner.env ?? {})])].sort()
+    ])),
+    assertions: Object.fromEntries(config.cases.flatMap((testCase) => (
+      (testCase.assertions ?? []).map((assertion) => [
+        `${testCase.id}/${assertion.id}`,
+        [...new Set([
+          ...(assertion.env_passthrough ?? []),
+          ...Object.keys(assertion.env ?? {})
+        ])].sort()
+      ])
+    ))),
+    judges: Object.fromEntries((config.judges ?? []).map((judge) => [
+      judge.id,
+      [...new Set([...(judge.env_passthrough ?? []), ...Object.keys(judge.env ?? {})])].sort()
+    ]))
+  };
 }
 
 async function gitProvenance(directory) {
@@ -414,8 +571,9 @@ Usage:
   skillproof init [skill-path] [--config skillproof.config.json]
   skillproof validate [config]
   skillproof test [skill-path] [--config file] [--output dir] [--allow-exec]
+  skillproof demo [skill-path] [--config file] --allow-exec
   skillproof report results.json [--output report.html]
-  skillproof doctor
+  skillproof doctor [--config file]
   skillproof prices [--price-catalog file]
 
 The test command isolates baseline, automatic availability, and forced-use runs.
